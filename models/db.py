@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import (
     Column, Integer, BigInteger, String, Boolean, Numeric, Text, TIMESTAMP, text,
     ForeignKey
@@ -153,3 +155,10 @@ class ErrorLog(Base):
         server_default=text("NOW()")
     )
     message = Column(Text)
+
+
+class AccessDenied(Exception):
+    def __init__(self, message: str, user_id: Optional[int] = None):
+        self.message = message
+        self.user_id = user_id
+        super().__init__(message)
