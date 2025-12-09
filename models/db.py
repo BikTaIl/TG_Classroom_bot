@@ -156,7 +156,6 @@ class ErrorLog(Base):
     )
     message = Column(Text)
 
-
 class AccessDenied(Exception):
     def __init__(self, message: str, user_id: Optional[int] = None):
         self.message = message
