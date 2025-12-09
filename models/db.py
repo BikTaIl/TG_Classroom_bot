@@ -33,6 +33,7 @@ class User(Base):
     submissions = relationship("Submission", back_populates="student")
     notifications = relationship("Notification", back_populates="user")
     permissions = relationship("Permission", back_populates="user")
+    oauth_states = relationship("OAuthState", back_populates="user")  # <- добавлено
 
 
 class GithubAccount(Base):
@@ -144,6 +145,16 @@ class Permission(Base):
     permitted_role = Column(String, primary_key=True)
 
     user = relationship("User", back_populates="permissions")
+
+
+class OAuthState(Base):
+    __tablename__ = "oauth_states"
+
+    state = Column(String, primary_key=True)
+    telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=text("NOW()"))
+
+    user = relationship("User", back_populates="oauth_states")
 
 
 class ErrorLog(Base):
