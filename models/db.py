@@ -13,6 +13,7 @@ class User(Base):
     __tablename__ = "users"
 
     telegram_id = Column(BigInteger, primary_key=True)
+    telegram_username = Column(String, primary_key=True)
     active_github_username = Column(String)
     full_name = Column(String)
     banned = Column(Boolean)
@@ -74,7 +75,7 @@ class Assistant(Base):
     __tablename__ = "assistants"
 
     telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
-    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"))
+    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"), primary_key=True)
 
     user = relationship("User", back_populates="assistants")
     course = relationship("Course", back_populates="assistants")
