@@ -2,6 +2,8 @@
 .venv
 buffer.py
 check.py
+my_db.py
+
 
 # macOS
 .DS_Store

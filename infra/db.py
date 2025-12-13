@@ -1,4 +1,4 @@
-from init_db import engine
+from infra.init_db import engine
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker
