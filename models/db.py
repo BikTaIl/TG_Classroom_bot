@@ -50,6 +50,15 @@ class GithubAccount(Base):
 
     user = relationship("User", back_populates="github_accounts")
 
+class GitLogs(Base):
+    __tablename__ = "git_logs"
+    log_status = Column(Integer)
+    log_message = Column(String)
+    created_at = Column(
+        TIMESTAMP,
+        server_default=text("NOW()")
+    )
+
 
 class Course(Base):
     __tablename__ = "courses"
