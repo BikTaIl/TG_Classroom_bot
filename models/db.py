@@ -28,7 +28,6 @@ class User(Base):
     )
 
     github_accounts = relationship("GithubAccount", back_populates="user")
-    courses_as_teacher = relationship("Course", back_populates="teacher")
     assistants = relationship("Assistant", back_populates="user")
     submissions = relationship("Submission", back_populates="student")
     notifications = relationship("Notification", back_populates="user")
@@ -49,12 +48,24 @@ class GithubAccount(Base):
     user = relationship("User", back_populates="github_accounts")
 
 
+class GitOrganization(Base):
+    __tablename__ = "github_organizations"
+
+    organization_name = Column(String, primary_key=True)
+    teacher_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    created_at = Column(
+        TIMESTAMP,
+        server_default=text("NOW()")
+    )
+
+    course = relationship("Course", back_populates="organizations")
+
 class Course(Base):
     __tablename__ = "courses"
 
     classroom_id = Column(BigInteger, primary_key=True)
     name = Column(String)
-    teacher_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    organization_name = Column(String, ForeignKey("github_organizations.organization_name"))
     created_at = Column(
         TIMESTAMP,
         server_default=text("NOW()")
@@ -65,7 +76,7 @@ class Course(Base):
         server_onupdate=text("NOW()")
     )
 
-    teacher = relationship("User", back_populates="courses_as_teacher")
+    organizations = relationship("GitOrganization", back_populates="course")
     assistants = relationship("Assistant", back_populates="course")
     assignments = relationship("Assignment", back_populates="course")
 
@@ -83,10 +94,9 @@ class Assistant(Base):
 class Assignment(Base):
     __tablename__ = "assignments"
 
-    id = Column(BigInteger, primary_key=True)
+    github_assignment_id = Column(Integer, primary_key=True)
     classroom_id = Column(BigInteger, ForeignKey("courses.classroom_id"))
     title = Column(String)
-    github_assignment_id = Column(String)
     max_score = Column(Numeric)
     deadline_full = Column(TIMESTAMP)
     created_at = Column(
@@ -98,7 +108,6 @@ class Assignment(Base):
         server_default=text("NOW()"),
         server_onupdate=text("NOW()")
     )
-    grading_mode = Column(String)
 
     course = relationship("Course", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
@@ -108,12 +117,11 @@ class Submission(Base):
     __tablename__ = "submissions"
 
     id = Column(BigInteger, primary_key=True)
-    assignment_id = Column(BigInteger, ForeignKey("assignments.id"))
+    assignment_id = Column(BigInteger, ForeignKey("assignments.github_assignment_id"))
     student_github_username = Column(String)
     student_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
     repo_url = Column(String)
     is_submitted = Column(Boolean)
-    submitted_at = Column(TIMESTAMP)
     score = Column(Numeric)
     created_at = Column(
         TIMESTAMP,
@@ -166,6 +174,7 @@ class ErrorLog(Base):
         server_default=text("NOW()")
     )
     message = Column(Text)
+
 
 class AccessDenied(Exception):
     def __init__(self, message: str, user_id: Optional[int] = None):

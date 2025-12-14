@@ -7,6 +7,7 @@ import json
 
 load_dotenv()
 
+
 class GitHubClassroomClient:
     def __init__(self, token: Optional[str] = None):
         self.token = token or os.getenv("GITHUB_CLASSROOM_TOKEN")
@@ -33,6 +34,23 @@ class GitHubClassroomClient:
             classrooms = resp.json()
         return classrooms
 
+    async def get_course_details(self, course_id: int):
+        """
+        Вернуть все детали курса
+        :param course_id айди курса
+        :return: json формата: {"id": id,
+                                "name": name,
+                                "archived": archived,
+                                "url": url,
+                                "organization": organization}
+        """
+        url = f"https://api.github.com/classrooms/{course_id}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, headers=self.headers)
+            resp.raise_for_status()
+            course_details = resp.json()
+        return course_details
+
     async def get_assignments(self, classroom_id: int):
         """
         Вернуть все задания из классрума по айди
@@ -53,7 +71,7 @@ class GitHubClassroomClient:
             assignments = resp.json()
         assignments_filtered = []
         for assignment in assignments:
-            assignments_filtered.append({key : assignment[key] for key in self.keys_for_assignments})
+            assignments_filtered.append({key: assignment[key] for key in self.keys_for_assignments})
         return assignments_filtered
 
     async def get_submissions(self, assignment_id: int):
@@ -83,18 +101,21 @@ class GitHubClassroomClient:
         except Exception:
             return False
 
+
 async def main():
     gh = GitHubClassroomClient()
     courses = await gh.get_courses()
     for course in courses:
         print("course: ", course)
         assignments = await gh.get_assignments(course["id"])
+        details = await gh.get_course_details(course["id"])
+        print("details:", details)
         for assignment in assignments:
             print("assignment: ", assignment)
+            print("details: ", await gh.get_assignment_details(course['id'], assignment['id']))
             submissions = await gh.get_submissions(assignment["id"])
             for submission in submissions:
                 print("submission: ", submission)
-
 
 
 if __name__ == "__main__":
