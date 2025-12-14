@@ -36,3 +36,12 @@ class ChangeGitHubAccount(StatesGroup):
 
 class ChangeCourse(StatesGroup):
     waiting_course_id = State()
+
+class NewDeadline(StatesGroup):
+    waiting_hours = State()
+
+class RemoveDeadline(StatesGroup):
+    waiting_hours = State()
+
+class SendMessage(StatesGroup):
+    waiting_message = State()

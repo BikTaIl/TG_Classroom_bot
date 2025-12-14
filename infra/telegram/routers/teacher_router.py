@@ -73,8 +73,8 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_course_students_overview(cb.message.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_course_students_overview(cb.message.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 @teacher_router.callback_query(F.data == "get_assignment_students_status_teacher")
@@ -82,8 +82,8 @@ async def process_get_assignment_students_status_teacher(cb: CallbackQuery, stat
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
-        overview = get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
@@ -92,8 +92,8 @@ async def process_get_classroom_users_without_bot_accounts_teacher(cb: CallbackQ
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_classroom_users_without_bot_accounts(cb.message.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_classroom_users_without_bot_accounts(cb.message.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
@@ -102,8 +102,8 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_course_deadlines_overview(cb.message.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_course_deadlines_overview(cb.message.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
@@ -112,8 +112,8 @@ async def process_get_tasks_to_grade_summary_teacher(cb: CallbackQuery, state: F
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_tasks_to_grade_summary(cb.message.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_tasks_to_grade_summary(cb.message.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
@@ -122,8 +122,8 @@ async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_manual_check_submissions_summary(cb.message.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_manual_check_submissions_summary(cb.message.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
@@ -132,9 +132,9 @@ async def process_get_teacher_deadline_notification_payload_teacher(cb: Callback
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
-        overview = get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
+        overview = await get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
     if overview:
-        await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     else:
         await cb.message.answer("Данных нет", reply_markup=return_to_the_menu())
     await cb.answer()

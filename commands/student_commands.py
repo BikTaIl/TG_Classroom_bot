@@ -9,6 +9,7 @@ async def set_student_active_course(telegram_id: int, course_id: Optional[int], 
 
 async def get_student_notification_rules(telegram_id: int, session: AsyncSession) -> Sequence[int]:
     """Получить список времен уведомлений студента."""
+    return [1, 2, 3]
 
 
 async def add_student_notification_rule(telegram_id: int, hours_before: int, session: AsyncSession) -> None:
