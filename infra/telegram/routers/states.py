@@ -27,3 +27,9 @@ class Unban(StatesGroup):
 
 class FindErrors(StatesGroup):
     waiting_date = State()
+
+class ChangeRole(StatesGroup):
+    waiting_role = State()
+
+class ChangeGitHubAccount(StatesGroup):
+    waiting_login = State()

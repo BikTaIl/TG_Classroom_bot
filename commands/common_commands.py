@@ -15,6 +15,7 @@ async def logout_user(telegram_id: int, session: AsyncSession) -> None:
 
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:
     """Установить активную роль пользователя: 'student', 'teacher', 'assistant', 'admin'. С проверкой на доступность роли"""
+    return
 
 
 async def toggle_global_notifications(telegram_id: int, session: AsyncSession) -> None:
