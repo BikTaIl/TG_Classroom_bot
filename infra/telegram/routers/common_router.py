@@ -22,6 +22,7 @@ async def start_panel(message: Message):
 @common_router.callback_query(F.data == "start")
 async def start_panel(cb: CallbackQuery):
     await cb.message.answer("Основная панель:", reply_markup=get_start_menu())
+    await cb.answer()
 
 @common_router.callback_query(F.data == "login_link_github")
 async def process_login_link_github(cb: CallbackQuery, state: FSMContext):
@@ -120,4 +121,3 @@ async def process_change_git_account_second(message: Message, state: FSMContext)
         await message.answer("Аккаунт не был переключен. Возможно, вы не вошли в этот аккаунт или логин введен неправильно.", reply_markup=return_to_the_start())
     finally:
         await state.clear()
-    await message.answer()

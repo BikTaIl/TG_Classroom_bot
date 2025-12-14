@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Any, Sequence, Mapping
+from infra.gh_client import GitHubClassroomClient
 
 
 async def set_teacher_active_course(telegram_id: int, course_id: Optional[int], session: AsyncSession) -> None:
@@ -96,7 +97,6 @@ async def create_course_announcement(
 async def trigger_manual_sync_for_teacher(
         course_id: int,
         teacher_telegram_id: int,
-        session: AsyncSession,
-        github: GitHubClassroomClient
+        session: AsyncSession
         ) -> bool:
         """Выполнить ручную синхронизацию данных по курсу. Только для учителя"""

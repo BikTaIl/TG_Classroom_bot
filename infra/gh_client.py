@@ -1,0 +1,2 @@
+class GitHubClassroomClient:
+    pass

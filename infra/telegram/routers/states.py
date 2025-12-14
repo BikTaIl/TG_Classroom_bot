@@ -33,3 +33,6 @@ class ChangeRole(StatesGroup):
 
 class ChangeGitHubAccount(StatesGroup):
     waiting_login = State()
+
+class ChangeCourse(StatesGroup):
+    waiting_course_id = State()

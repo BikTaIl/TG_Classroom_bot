@@ -1,21 +1,15 @@
 import asyncio
-from pyexpat.errors import messages
-
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
+
+from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.admin_keyboards import *
 from .states import *
 from commands.admin_commands import *
 
 admin_router = Router()
-
-@admin_router.message(Command("start_admin"))
-async def admin_panel(message: Message):
-    """Отображение клавиатуры админа"""
-    await message.answer("Панель администратора:", reply_markup=get_admin_menu())
 
 @admin_router.callback_query(F.data == "start_admin")
 async def admin_panel(cb: CallbackQuery):
@@ -130,7 +124,7 @@ async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSM
     async with AsyncSessionLocal() as session:
         answer = await get_last_failed_github_call_info(cb.message.from_user.id, session)
     if answer:
-        await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {answer}", reply_markup=return_to_the_menu())
+        await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
     else:
         await cb.message.answer("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
     await cb.answer()
