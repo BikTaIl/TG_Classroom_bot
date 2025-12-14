@@ -12,7 +12,7 @@ from adapters.table_to_text import table_to_text
 
 assistant_router = Router()
 
-@assistant_router.callback_query(F.data == "start_admin")
+@assistant_router.callback_query(F.data == "start_assistant")
 async def admin_panel(cb: CallbackQuery):
     """Отображение клавиатуры админа"""
     await cb.message.answer("Панель ассистента:", reply_markup=get_assistant_menu())
@@ -30,7 +30,7 @@ async def process_set_teacher_active_course_assistant_first(cb: CallbackQuery, s
 async def process_set_teacher_active_course_assistant_second(message: Message, state: FSMContext):
     course_id = message.text
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             if course_id == '-':
                 await set_teacher_active_course(message.from_user.id, course_id=None, session=session)
                 await state.update_data(course_id=None)
@@ -55,7 +55,7 @@ async def process_set_teacher_active_assignment_assistant_first(cb: CallbackQuer
 async def process_set_teacher_active_assignment_assistant_second(message: Message, state: FSMContext):
     assignment_id = message.text
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             if assignment_id == '-':
                 await set_teacher_active_assignment(message.from_user.id, assignment_id=None, session=session)
                 await state.update_data(assignment_id=None)
@@ -72,7 +72,7 @@ async def process_set_teacher_active_assignment_assistant_second(message: Messag
 async def process_get_course_students_overview_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_course_students_overview(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -81,7 +81,7 @@ async def process_get_course_students_overview_assistant(cb: CallbackQuery, stat
 async def process_get_assignment_students_status_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -91,7 +91,7 @@ async def process_get_assignment_students_status_assistant(cb: CallbackQuery, st
 async def process_get_classroom_users_without_bot_accounts_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_classroom_users_without_bot_accounts(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -101,7 +101,7 @@ async def process_get_classroom_users_without_bot_accounts_assistant(cb: Callbac
 async def process_get_course_deadlines_overview_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_course_deadlines_overview(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -111,7 +111,7 @@ async def process_get_course_deadlines_overview_assistant(cb: CallbackQuery, sta
 async def process_get_tasks_to_grade_summary_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_tasks_to_grade_summary(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -121,7 +121,7 @@ async def process_get_tasks_to_grade_summary_assistant(cb: CallbackQuery, state:
 async def process_get_manual_check_submissions_summary_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_manual_check_submissions_summary(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -131,7 +131,7 @@ async def process_get_manual_check_submissions_summary_assistant(cb: CallbackQue
 async def process_get_teacher_deadline_notification_payload_assistant(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
     if overview:
         await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())

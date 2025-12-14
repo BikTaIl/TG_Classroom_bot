@@ -65,7 +65,7 @@ async def process_set_active_role_teacher(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.message.from_user.id, role, session)
-        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=return_to_the_start())
+        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_teacher())
     except:
         await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
     await cb.answer()
@@ -87,7 +87,7 @@ async def process_set_active_role_assistant(cb: CallbackQuery, state: FSMContext
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.message.from_user.id, role, session)
-        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=return_to_the_start())
+        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_assistant())
     except:
         await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
     await cb.answer()

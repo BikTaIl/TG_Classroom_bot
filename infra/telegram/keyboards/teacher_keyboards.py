@@ -21,7 +21,7 @@ def get_teacher_menu() -> InlineKeyboardMarkup:
 
 def return_to_the_menu() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="В меню ассистента", callback_data="start_teacher")],
+        [InlineKeyboardButton(text="В меню учителя", callback_data="start_teacher")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -1,14 +1,9 @@
 import asyncio
-from pyexpat.errors import messages
-from xml.sax.saxutils import escape
-
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
 
 from adapters.table_to_text import table_to_text
-from commands.student_commands import set_student_active_course
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.teacher_keyboards import *
 from .states import *
@@ -17,7 +12,7 @@ from adapters.table_to_text import table_to_text
 
 teacher_router = Router()
 
-@teacher_router.callback_query(F.data == "start_admin")
+@teacher_router.callback_query(F.data == "start_teacher")
 async def admin_panel(cb: CallbackQuery):
     """Отображение клавиатуры админа"""
     await cb.message.answer("Панель ассистента:", reply_markup=get_teacher_menu())
@@ -35,7 +30,7 @@ async def process_set_teacher_active_course_teacher_first(cb: CallbackQuery, sta
 async def process_set_teacher_active_course_teacher_second(message: Message, state: FSMContext):
     course_id = message.text
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             if course_id == '-':
                 await set_teacher_active_course(message.from_user.id, course_id=None, session=session)
                 await state.update_data(course_id=None)
@@ -60,7 +55,7 @@ async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery,
 async def process_set_teacher_active_assignment_teacher_second(message: Message, state: FSMContext):
     assignment_id = message.text
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             if assignment_id == '-':
                 await set_teacher_active_assignment(message.from_user.id, assignment_id=None, session=session)
                 await state.update_data(assignment_id=None)
@@ -77,7 +72,7 @@ async def process_set_teacher_active_assignment_teacher_second(message: Message,
 async def process_get_course_students_overview_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_course_students_overview(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -86,7 +81,7 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
 async def process_get_assignment_students_status_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -96,7 +91,7 @@ async def process_get_assignment_students_status_teacher(cb: CallbackQuery, stat
 async def process_get_classroom_users_without_bot_accounts_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_classroom_users_without_bot_accounts(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -106,7 +101,7 @@ async def process_get_classroom_users_without_bot_accounts_teacher(cb: CallbackQ
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_course_deadlines_overview(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -116,7 +111,7 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state
 async def process_get_tasks_to_grade_summary_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_tasks_to_grade_summary(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -126,7 +121,7 @@ async def process_get_tasks_to_grade_summary_teacher(cb: CallbackQuery, state: F
 async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_manual_check_submissions_summary(cb.message.from_user.id, course_id, session)
     await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
@@ -136,7 +131,7 @@ async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery
 async def process_get_teacher_deadline_notification_payload_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         overview = get_assignment_students_status(cb.message.from_user.id, assignment_id, session)
     if overview:
         await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
@@ -158,7 +153,7 @@ async def process_add_course_assistant_teacher_second(message: Message, state: F
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             await add_course_assistant(message.from_user.id, course_id, username, session)
         await message.answer("Ассистент успешно добавлен!", reply_markup=return_to_the_menu())
     except:
@@ -167,19 +162,19 @@ async def process_add_course_assistant_teacher_second(message: Message, state: F
 
 @teacher_router.callback_query(F.data == "remove_course_assistant_teacher")
 async def process_remove_course_assistant_teacher_first(cb: CallbackQuery, state: FSMContext):
-    await state.set_state(AddAssistant.waiting_username)
+    await state.set_state(RemoveAssistant.waiting_username)
     await cb.message.answer(
         "Введите ник ассистента в виде @username или username:"
     )
     await cb.answer()
 
-@teacher_router.message(AddAssistant.waiting_username)
+@teacher_router.message(RemoveAssistant.waiting_username)
 async def process_remove_course_assistant_teacher_second(message: Message, state: FSMContext):
     username = message.text
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             await remove_course_assistant(message.from_user.id, course_id, username, session)
         await message.answer("Ассистент успешно удален!", reply_markup=return_to_the_menu())
     except:
@@ -200,7 +195,7 @@ async def process_create_course_announcement_teacher_second(message: Message, st
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal as session:
+        async with AsyncSessionLocal() as session:
             await create_course_announcement(message.from_user.id, course_id, text, session)
         await message.answer("Уведомление успешно создано!", reply_markup=return_to_the_menu())
     except:
@@ -210,7 +205,7 @@ async def process_create_course_announcement_teacher_second(message: Message, st
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         done = await trigger_manual_sync_for_teacher(cb.message.from_user.id, course_id, session)
     if done:
         await cb.message.answer("Сессия синхронизирована")

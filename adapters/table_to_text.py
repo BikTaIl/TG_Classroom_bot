@@ -3,9 +3,9 @@ from typing import Sequence, Mapping, Any, Union
 from prettytable import PrettyTable
 
 async def table_to_text(data: Union[Sequence[Mapping[str, Any]], Mapping[str, Any]]) -> str:
-    table = PrettyTable
+    table = PrettyTable()
     if isinstance(data, Sequence):
-        headers = data[0].keys()
+        headers = list(data[0].keys())
         table.field_names = headers
         for row in data:
             data_row = []

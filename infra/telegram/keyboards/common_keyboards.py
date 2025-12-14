@@ -31,3 +31,15 @@ def go_to_admin() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Перейти на панель администратора", callback_data="start_admin")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def go_to_teacher() -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="Перейти на панель учителя", callback_data="start_teacher")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def go_to_assistant() -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="Перейти на панель ассистента", callback_data="start_assistant")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
