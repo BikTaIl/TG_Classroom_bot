@@ -21,6 +21,7 @@ async def admin_panel(message: Message):
 async def admin_panel(cb: CallbackQuery):
     """Отображение клавиатуры админа"""
     await cb.message.answer("Панель администратора:", reply_markup=get_admin_menu())
+    await cb.answer()
 
 @admin_router.callback_query(F.data == "grant_teacher_role")
 async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext):
@@ -109,7 +110,7 @@ async def process_unban_user_second(message: Message, state: FSMContext):
             result = await get_error_count_for_day(message.from_user.id, session, date(target_date))
         else:
             result = await get_error_count_for_day(message.from_user.id, session)
-    await message.answer(f"Ошибок за куазанный период: {result}", reply_markup=return_to_the_menu())
+    await message.answer(f"Ошибок за указанный период: {result}", reply_markup=return_to_the_menu())
     await state.clear()
 
 #Команда поиска последнего успешного запроса
@@ -121,6 +122,7 @@ async def process_get_last_successful_github_call_time(cb: CallbackQuery, state:
         await cb.message.answer(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
     else:
         await cb.message.answer("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
+    await cb.answer()
 
 #Команда свода ошибок
 @admin_router.callback_query(F.data == "get_last_failed_github_call_info")
@@ -131,3 +133,4 @@ async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSM
         await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {answer}", reply_markup=return_to_the_menu())
     else:
         await cb.message.answer("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
+    await cb.answer()

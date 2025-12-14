@@ -5,16 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="50bf76d9-232f-492a-8988-ce3c4845dbda" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/commands/common_commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/commands/common_commands.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/infra/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/db.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/infra/telegram/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/infra/telegram/keyboards/admin_keyboards.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/keyboards/admin_keyboards.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/infra/telegram/keyboards/common_keyboards.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/keyboards/common_keyboards.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/infra/telegram/routers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/routers/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/infra/telegram/routers/admin_router.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/routers/admin_router.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/infra/telegram/routers/common_router.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/routers/common_router.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/infra/telegram/routers/states.py" beforeDir="false" afterPath="$PROJECT_DIR$/infra/telegram/routers/states.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
