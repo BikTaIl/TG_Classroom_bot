@@ -79,14 +79,14 @@ async def sync_function(session: AsyncSession) -> None:
         raise e
 
 
-async def get_students_nearing_deadline(session: AsyncSession) -> set[tuple[int, str, str]]:
+async def get_students_nearing_deadline(session: AsyncSession) -> set[tuple[int, str, str, str]]:
     """
-    Вытащить (telegram_id, course_name, assignment_title)
+    Вытащить (telegram_id, course_name, assignment_title, notification_time)
     для студентов, у которых желаемое время уведомления
     попадает в окно [NOW(), NOW() + 20 мин]
     Используется в scheduler
     :param session: AsyncSession
-    :returns tuple(tg_id, course_name, assignment_name)
+    :return tuple(tg_id, course_name, assignment_name)
     """
     now = func.now()
     twenty_minutes_later = now + text("INTERVAL '20 minutes'")
@@ -98,7 +98,8 @@ async def get_students_nearing_deadline(session: AsyncSession) -> set[tuple[int,
         select(
             User.telegram_id.label("telegram_id"),
             Course.name.label("course_name"),
-            Assignment.title.label("assignment_name")
+            Assignment.title.label("assignment_name"),
+            Notification.notification_time.label("notification_time")
         )
         .join(Notification, User.telegram_id == Notification.telegram_id)
         .join(Submission, User.telegram_id == Submission.student_telegram_id)
@@ -115,7 +116,7 @@ async def get_students_nearing_deadline(session: AsyncSession) -> set[tuple[int,
     )
     result = await session.execute(query)
     notificated_students = {
-        (row.telegram_id, row.course_name, row.assignment_name)
+        (row.telegram_id, row.course_name, row.assignment_name, row.notification_time)
         for row in result
     }
     return notificated_students

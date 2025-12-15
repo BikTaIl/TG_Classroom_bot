@@ -8,6 +8,8 @@ from commands.sync import get_students_nearing_deadline
 from models.gh_client import GitHubClassroomClient
 from models.db import ErrorLog, Assistant, Assignment, User, Notification, Submission, GitOrganization, Course
 from db import AsyncSessionLocal
+from telegram.app import bot
+from telegram.keyboards.common_keyboards import return_to_the_start
 
 scheduler = AsyncIOScheduler()
 gh = GitHubClassroomClient()
@@ -27,7 +29,10 @@ async def check_github():
 
 async def check_internal_tables():
     async with AsyncSessionLocal() as session:
-        res = await get_students_nearing_deadline(session)
+        res: set[tuple[int, str, str, str]] = await get_students_nearing_deadline(session)
+        for item in res:
+            message: str = f"Дедлайн по заданию {item[2]} в курсе {item[1]} наступит через {item[3]} часов"
+            await bot.send_message(item[0], message, reply_markup=return_to_the_start())
 
 
 
