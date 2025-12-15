@@ -1,5 +1,6 @@
 .env
 .venv
+testing.py
 buffer.py
 check.py
 my_db.py

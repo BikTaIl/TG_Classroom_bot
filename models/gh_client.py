@@ -112,7 +112,6 @@ async def main():
         print("details:", details)
         for assignment in assignments:
             print("assignment: ", assignment)
-            print("details: ", await gh.get_assignment_details(course['id'], assignment['id']))
             submissions = await gh.get_submissions(assignment["id"])
             for submission in submissions:
                 print("submission: ", submission)

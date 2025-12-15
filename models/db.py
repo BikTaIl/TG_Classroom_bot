@@ -29,10 +29,9 @@ class User(Base):
 
     github_accounts = relationship("GithubAccount", back_populates="user")
     assistants = relationship("Assistant", back_populates="user")
-    submissions = relationship("Submission", back_populates="student")
     notifications = relationship("Notification", back_populates="user")
     permissions = relationship("Permission", back_populates="user")
-    oauth_states = relationship("OAuthState", back_populates="user")  # <- добавлено
+    oauth_states = relationship("OAuthState", back_populates="user")
 
 
 class GithubAccount(Base):
@@ -119,7 +118,7 @@ class Submission(Base):
     id = Column(BigInteger, primary_key=True)
     assignment_id = Column(BigInteger, ForeignKey("assignments.github_assignment_id"))
     student_github_username = Column(String)
-    student_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    student_telegram_id = Column(BigInteger)
     repo_url = Column(String)
     is_submitted = Column(Boolean)
     score = Column(Numeric)
@@ -134,7 +133,6 @@ class Submission(Base):
     )
 
     assignment = relationship("Assignment", back_populates="submissions")
-    student = relationship("User", back_populates="submissions")
 
 
 class Notification(Base):
