@@ -13,6 +13,8 @@ class User(Base):
     __tablename__ = "users"
 
     telegram_id = Column(BigInteger, primary_key=True)
+    telegram_username = Column(String, unique=True)
+    active_role = Column(String)
     active_github_username = Column(String)
     full_name = Column(String)
     banned = Column(Boolean)
@@ -45,6 +47,15 @@ class GithubAccount(Base):
     )
 
     user = relationship("User", back_populates="github_accounts")
+
+class GitLogs(Base):
+    __tablename__ = "git_logs"
+    log_status = Column(Integer)
+    log_message = Column(String)
+    created_at = Column(
+        TIMESTAMP,
+        server_default=text("NOW()")
+    )
 
 
 class GitOrganization(Base):
@@ -84,7 +95,7 @@ class Assistant(Base):
     __tablename__ = "assistants"
 
     telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
-    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"))
+    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"), primary_key=True)
 
     user = relationship("User", back_populates="assistants")
     course = relationship("Course", back_populates="assistants")
