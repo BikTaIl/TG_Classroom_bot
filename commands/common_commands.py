@@ -41,3 +41,9 @@ async def toggle_global_notifications(telegram_id: int, session: AsyncSession) -
 async def change_git_account(telegram_id: int, github_login: str, session: AsyncSession) -> None:
     """Сменить гитхаб-аккаунт на другой залогиненный"""
     pass
+
+async def enter_name(telegram_id: int, full_name: str, session: AsyncSession) -> None:
+    """Добавить в бд полное имя пользователся"""
+    user = await session.get(User, telegram_id)
+    user.full_name = full_name
+    await session.commit()
