@@ -15,6 +15,7 @@ class User(Base):
     telegram_id = Column(BigInteger, primary_key=True)
     telegram_username = Column(String, unique=True)
     active_role = Column(String)
+    sync_count = Column(Integer)
     active_github_username = Column(String)
     full_name = Column(String)
     banned = Column(Boolean)

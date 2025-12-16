@@ -34,11 +34,6 @@ async def _check_permission(telegram_id: int, key_roles: list[str], course_id: i
             raise ValueError("Недостаточно прав.")
 
 
-async def set_teacher_active_course(telegram_id: int, course_id: Optional[int], session: AsyncSession) -> None:
-    """Установить/сбросить активный курс пользователя."""
-    pass  # жду деталей реализации
-
-
 async def set_teacher_active_assignment(telegram_id: int, assignment_id: Optional[int], session: AsyncSession) -> None:
     """Установить/сбросить активное задание для пользователя."""
     pass  # жду деталей реализации
@@ -593,9 +588,11 @@ async def create_course_announcement(
         course_id: int,
         text: str,
         session: AsyncSession = None
-) -> None:
-    """Создать объявление для курса. Только для учителя"""
-    pass  # жду указания к реализации
+) -> list[int]:
+    """Создать объявление для курса. Только для учителя
+    :return Список студентов, которым нужно отправить сообщение
+    """
+    pass
 
 
 async def trigger_manual_sync_for_teacher(
@@ -605,3 +602,4 @@ async def trigger_manual_sync_for_teacher(
         github: Any = None
 ) -> bool:
     """Выполнить ручную синхронизацию данных по курсу. Только для учителя"""
+    pass

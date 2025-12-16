@@ -32,11 +32,9 @@ async def process_set_teacher_active_course_teacher_second(message: Message, sta
     try:
         async with AsyncSessionLocal() as session:
             if course_id == '-':
-                await set_teacher_active_course(message.from_user.id, course_id=None, session=session)
                 await state.update_data(course_id=None)
                 await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
             else:
-                await set_teacher_active_course(message.from_user.id, course_id=course_id, session=session)
                 await state.update_data(course_id=course_id)
                 await message.answer("Курс установлен", reply_markup=return_to_the_menu())
     except:
@@ -57,11 +55,9 @@ async def process_set_teacher_active_assignment_teacher_second(message: Message,
     try:
         async with AsyncSessionLocal() as session:
             if assignment_id == '-':
-                await set_teacher_active_assignment(message.from_user.id, assignment_id=None, session=session)
                 await state.update_data(assignment_id=None)
                 await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
             else:
-                await set_teacher_active_assignment(message.from_user.id, assignment_id=assignment_id, session=session)
                 await state.update_data(assignment_id=assignment_id)
                 await message.answer("Задание установлено", reply_markup=return_to_the_menu())
     except:

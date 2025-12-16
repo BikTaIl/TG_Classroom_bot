@@ -258,6 +258,7 @@ async def submit_course_feedback(
         message: str,
         anonymous: bool,
         session: AsyncSession = None
-) -> None:
-    """Отправить анонимную или неанонимную обратную связь по курсу."""
+) -> int:
+    """Отправить анонимную или неанонимную обратную связь по курсу.
+    :returns Телеграм айди препода данного курса"""
     pass  # жду деталей реализации

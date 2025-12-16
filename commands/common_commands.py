@@ -15,26 +15,13 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
             telegram_id=telegram_id,
             telegram_username = telegram_username,
             active_role = None,
+            sync_count = 0,
             active_github_username = None,
             full_name = None,
             banned = False,
             notifications_enabled = True
         )
         session.add(new_user)
-        
-
-async def login_link_github(telegram_id: int, session: AsyncSession) -> str:
-    """Вернуть URL для привязки GitHub-аккаунта к пользователю Telegram."""
-    pass
-
-
-async def complete_github_link(telegram_id: int, code: str, state: str, session: AsyncSession) -> None:
-    """Завершить привязку GitHub-аккаунта после редиректа от GitHub"""
-    pass
-
-
-async def logout_user(telegram_id: int, session: AsyncSession) -> None:
-    pass
 
 
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:

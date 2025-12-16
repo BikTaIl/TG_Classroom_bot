@@ -62,7 +62,7 @@ async def complete_github_link(code: str, state: str, session: AsyncSession) -> 
     access_token = token_data.get("access_token")
     if not access_token:
         raise RuntimeError(f"GitHub OAuth failed: {token_data}")
-
+    #Рейз статуса
     user_url = "https://api.github.com/user"
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -76,7 +76,7 @@ async def complete_github_link(code: str, state: str, session: AsyncSession) -> 
 
     async with session.begin():
         user = await session.get(User, telegram_id)
-
+        #рейз статуса
         if user is None:
             raise ValueError("Wrong telegram_id passed")
         account = GithubAccount(
