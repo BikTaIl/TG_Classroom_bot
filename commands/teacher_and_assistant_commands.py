@@ -1,6 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, Any, Sequence, Mapping
-from infra.gh_client import GitHubClassroomClient
 
 
 async def set_teacher_active_course(telegram_id: int, course_id: Optional[int], session: AsyncSession) -> None:

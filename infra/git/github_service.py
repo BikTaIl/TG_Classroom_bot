@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urlencode
 import httpx
 from models.db import (User, GithubAccount, OAuthState)
-import asyncio
 from infra.config import GITHUB_CLIENT_ID, REDIRECT_URI, GITHUB_CLIENT_SECRET
 
 async def login_link_github(telegram_id: int, session: AsyncSession) -> str:

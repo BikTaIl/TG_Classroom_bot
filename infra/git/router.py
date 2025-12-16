@@ -39,6 +39,7 @@ async def github_callback(request: Request):
 async def start_fastapi():
     config = Config("infra.git.router:app", host="127.0.0.1", port=8000, loop="asyncio")
     server = Server(config)
+    print('Роутер запущен')
     await server.serve()
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.common_keyboards import *
 from .states import *
 from commands.common_commands import *
+from infra.git.github_service import login_link_github
 
 
 common_router = Router()

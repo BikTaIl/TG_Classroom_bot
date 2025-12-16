@@ -33,7 +33,6 @@ class User(Base):
     assistants = relationship("Assistant", back_populates="user")
     notifications = relationship("Notification", back_populates="user")
     permissions = relationship("Permission", back_populates="user")
-    oauth_states = relationship("OAuthState", back_populates="user")
 
 
 class GithubAccount(Base):
@@ -50,6 +49,7 @@ class GithubAccount(Base):
 
 class GitLogs(Base):
     __tablename__ = "git_logs"
+    id = Column(Integer, primary_key=True)
     log_status = Column(Integer)
     log_message = Column(String)
     created_at = Column(
@@ -168,10 +168,8 @@ class OAuthState(Base):
     __tablename__ = "oauth_states"
 
     state = Column(String, primary_key=True)
-    telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)
+    telegram_id = Column(BigInteger, nullable=False)
     created_at = Column(TIMESTAMP, server_default=text("NOW()"))
-
-    user = relationship("User", back_populates="oauth_states")
 
 
 class ErrorLog(Base):

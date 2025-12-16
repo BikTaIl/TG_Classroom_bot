@@ -40,7 +40,7 @@ scheduler.add_job(check_github, IntervalTrigger(hours=8))
 scheduler.add_job(check_internal_tables, IntervalTrigger(minutes=15))
 
 
-async def main():
+async def run_scheduler():
     await check_internal_tables()
     scheduler.start()
     while True:
@@ -48,4 +48,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_scheduler())
