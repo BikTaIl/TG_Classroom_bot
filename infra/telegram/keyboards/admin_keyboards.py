@@ -2,6 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def get_admin_menu() -> InlineKeyboardMarkup:
+    """Основная клавиатура администратора"""
     buttons = [
         [InlineKeyboardButton(text="Выдать роль учителя", callback_data="grant_teacher_role")],
         [InlineKeyboardButton(text="Забрать роль учителя", callback_data="revoke_teacher_role")],
@@ -14,6 +15,9 @@ def get_admin_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def return_to_the_menu() -> InlineKeyboardMarkup:
+    """Клавиатура, появляющаяся после успешного запроса/
+    успешного выполнения функции и отправляющая в стартовое
+    меню или в меню администратора"""
     buttons = [
         [InlineKeyboardButton(text="В меню администратора", callback_data="start_admin")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]

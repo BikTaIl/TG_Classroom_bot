@@ -1,9 +1,6 @@
-import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
-
-from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.assistant_keyboards import *
 from .states import *
@@ -14,12 +11,14 @@ assistant_router = Router()
 
 @assistant_router.callback_query(F.data == "start_assistant")
 async def admin_panel(cb: CallbackQuery):
-    """Отображение клавиатуры админа"""
+    """Функция отображения панели ассистента.
+       Отображается только по кнопке, через команду зайти нельзя."""
     await cb.message.answer("Панель ассистента:", reply_markup=get_assistant_menu())
     await cb.answer()
 
 @assistant_router.callback_query(F.data == "set_teacher_active_course_assistant")
 async def process_set_teacher_active_course_assistant_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции set_teacher_active_course_assistant"""
     await state.set_state(ChangeCourse.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого курса или '-', если хотите сбросить курс"
@@ -28,6 +27,7 @@ async def process_set_teacher_active_course_assistant_first(cb: CallbackQuery, s
 
 @assistant_router.message(ChangeCourse.waiting_course_id)
 async def process_set_teacher_active_course_assistant_second(message: Message, state: FSMContext):
+    """Ввод ID курса для функции set_teacher_active_course_assistant"""
     course_id = message.text
     try:
         async with AsyncSessionLocal() as session:
@@ -45,6 +45,7 @@ async def process_set_teacher_active_course_assistant_second(message: Message, s
 
 @assistant_router.callback_query(F.data == "set_teacher_active_assignment_assistant")
 async def process_set_teacher_active_assignment_assistant_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции set_teacher_active_assignment_assistant"""
     await state.set_state(ChangeCourse.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого задания или '-', если хотите сбросить его."
@@ -53,6 +54,7 @@ async def process_set_teacher_active_assignment_assistant_first(cb: CallbackQuer
 
 @assistant_router.message(ChangeCourse.waiting_course_id)
 async def process_set_teacher_active_assignment_assistant_second(message: Message, state: FSMContext):
+    """Ввод ID курса для функции set_teacher_active_assignment_assistant"""
     assignment_id = message.text
     try:
         async with AsyncSessionLocal() as session:
@@ -70,71 +72,81 @@ async def process_set_teacher_active_assignment_assistant_second(message: Messag
 
 @assistant_router.callback_query(F.data == "get_course_students_overview_assistant")
 async def process_get_course_students_overview_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_course_students_overview_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_course_students_overview(cb.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_course_students_overview(cb.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 @assistant_router.callback_query(F.data == "get_assignment_students_status_assistant")
 async def process_get_assignment_students_status_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_assignment_students_status_assistant"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
-        overview = get_assignment_students_status(cb.from_user.id, assignment_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_classroom_users_without_bot_accounts_assistant")
 async def process_get_classroom_users_without_bot_accounts_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_classroom_users_without_bot_accounts_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
+    result = ""
+    for username in overview:
+        result += username + "\n"
+    await cb.message.answer(result, reply_markup=return_to_the_menu())
     await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_course_deadlines_overview_assistant")
 async def process_get_course_deadlines_overview_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_course_deadlines_overview_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_course_deadlines_overview(cb.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_tasks_to_grade_summary_assistant")
 async def process_get_tasks_to_grade_summary_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_tasks_to_grade_summary_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_manual_check_submissions_summary_assistant")
 async def process_get_manual_check_submissions_summary_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_manual_check_submissions_summary_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        overview = get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
-    await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
+    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_teacher_deadline_notification_payload_assistant")
 async def process_get_teacher_deadline_notification_payload_assistant(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_teacher_deadline_notification_payload_assistant"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
-        overview = get_assignment_students_status(cb.from_user.id, assignment_id, session)
+        overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
     if overview:
-        await cb.message.answer(table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     else:
         await cb.message.answer("Данных нет")
     await cb.answer()
