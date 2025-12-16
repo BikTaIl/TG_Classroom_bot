@@ -2,6 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def get_assistant_menu() -> InlineKeyboardMarkup:
+    """Основная клавиатура ассистента"""
     buttons = [
         [InlineKeyboardButton(text="Установить активный курс", callback_data="set_teacher_active_course_assistant")],
         [InlineKeyboardButton(text="Установить активное задание", callback_data="set_teacher_active_assignment_assistant")],
@@ -16,6 +17,9 @@ def get_assistant_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def return_to_the_menu() -> InlineKeyboardMarkup:
+    """Клавиатура, появляющаяся после успешного запроса/
+    успешного выполнения функции и отправляющая в стартовое
+    меню или в меню ассистента"""
     buttons = [
         [InlineKeyboardButton(text="В меню ассистента", callback_data="start_assistant")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]

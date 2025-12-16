@@ -2,6 +2,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def get_student_menu() -> InlineKeyboardMarkup:
+    """Основная клавиатура студента"""
     buttons = [
         [InlineKeyboardButton(text="Установить/сбросить активный курс", callback_data="set_student_active_course")],
         [InlineKeyboardButton(text="Получить список уведомлений", callback_data="get_student_notification_rules")],
@@ -17,6 +18,9 @@ def get_student_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def return_to_the_menu() -> InlineKeyboardMarkup:
+    """Клавиатура, появляющаяся после успешного запроса/
+    успешного выполнения функции и отправляющая в стартовое
+    меню или в меню студента"""
     buttons = [
         [InlineKeyboardButton(text="В меню студента", callback_data="start_student")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]
@@ -24,6 +28,7 @@ def return_to_the_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def is_anonymus() -> InlineKeyboardMarkup:
+    """Выбор анонимности/неанонимности обратной связи учителю"""
     buttons = [
         [InlineKeyboardButton(text="Да", callback_data="is_anonymus"),
          InlineKeyboardButton(text="Нет", callback_data="is_not_anonymus")]
