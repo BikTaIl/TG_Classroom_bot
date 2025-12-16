@@ -4,7 +4,7 @@ from sqlalchemy import select, update, delete, and_, or_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from decimal import Decimal
-from .teacher_and_assistant_commands import _check_permission
+from .teacher_and_assistant_commands import _check_permission, _get_user_by_username
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
     ErrorLog, AccessDenied, GitLogs
 
