@@ -13,6 +13,8 @@ class User(Base):
     __tablename__ = "users"
 
     telegram_id = Column(BigInteger, primary_key=True)
+    telegram_username = Column(String, unique=True)
+    active_role = Column(String)
     active_github_username = Column(String)
     full_name = Column(String)
     banned = Column(Boolean)
@@ -28,9 +30,7 @@ class User(Base):
     )
 
     github_accounts = relationship("GithubAccount", back_populates="user")
-    courses_as_teacher = relationship("Course", back_populates="teacher")
     assistants = relationship("Assistant", back_populates="user")
-    submissions = relationship("Submission", back_populates="student")
     notifications = relationship("Notification", back_populates="user")
     permissions = relationship("Permission", back_populates="user")
 
@@ -47,13 +47,35 @@ class GithubAccount(Base):
 
     user = relationship("User", back_populates="github_accounts")
 
+class GitLogs(Base):
+    __tablename__ = "git_logs"
+    id = Column(Integer, primary_key=True)
+    log_status = Column(Integer)
+    log_message = Column(String)
+    created_at = Column(
+        TIMESTAMP,
+        server_default=text("NOW()")
+    )
+
+
+class GitOrganization(Base):
+    __tablename__ = "github_organizations"
+
+    organization_name = Column(String, primary_key=True)
+    teacher_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    created_at = Column(
+        TIMESTAMP,
+        server_default=text("NOW()")
+    )
+
+    course = relationship("Course", back_populates="organizations")
 
 class Course(Base):
     __tablename__ = "courses"
 
     classroom_id = Column(BigInteger, primary_key=True)
     name = Column(String)
-    teacher_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    organization_name = Column(String, ForeignKey("github_organizations.organization_name"))
     created_at = Column(
         TIMESTAMP,
         server_default=text("NOW()")
@@ -64,7 +86,7 @@ class Course(Base):
         server_onupdate=text("NOW()")
     )
 
-    teacher = relationship("User", back_populates="courses_as_teacher")
+    organizations = relationship("GitOrganization", back_populates="course")
     assistants = relationship("Assistant", back_populates="course")
     assignments = relationship("Assignment", back_populates="course")
 
@@ -73,7 +95,7 @@ class Assistant(Base):
     __tablename__ = "assistants"
 
     telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
-    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"))
+    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"), primary_key=True)
 
     user = relationship("User", back_populates="assistants")
     course = relationship("Course", back_populates="assistants")
@@ -82,10 +104,9 @@ class Assistant(Base):
 class Assignment(Base):
     __tablename__ = "assignments"
 
-    id = Column(BigInteger, primary_key=True)
+    github_assignment_id = Column(Integer, primary_key=True)
     classroom_id = Column(BigInteger, ForeignKey("courses.classroom_id"))
     title = Column(String)
-    github_assignment_id = Column(String)
     max_score = Column(Numeric)
     deadline_full = Column(TIMESTAMP)
     created_at = Column(
@@ -97,7 +118,6 @@ class Assignment(Base):
         server_default=text("NOW()"),
         server_onupdate=text("NOW()")
     )
-    grading_mode = Column(String)
 
     course = relationship("Course", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
@@ -107,12 +127,11 @@ class Submission(Base):
     __tablename__ = "submissions"
 
     id = Column(BigInteger, primary_key=True)
-    assignment_id = Column(BigInteger, ForeignKey("assignments.id"))
+    assignment_id = Column(BigInteger, ForeignKey("assignments.github_assignment_id"))
     student_github_username = Column(String)
-    student_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    student_telegram_id = Column(BigInteger)
     repo_url = Column(String)
     is_submitted = Column(Boolean)
-    submitted_at = Column(TIMESTAMP)
     score = Column(Numeric)
     created_at = Column(
         TIMESTAMP,
@@ -125,7 +144,6 @@ class Submission(Base):
     )
 
     assignment = relationship("Assignment", back_populates="submissions")
-    student = relationship("User", back_populates="submissions")
 
 
 class Notification(Base):
@@ -144,6 +162,14 @@ class Permission(Base):
     permitted_role = Column(String, primary_key=True)
 
     user = relationship("User", back_populates="permissions")
+
+
+class OAuthState(Base):
+    __tablename__ = "oauth_states"
+
+    state = Column(String, primary_key=True)
+    telegram_id = Column(BigInteger, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=text("NOW()"))
 
 
 class ErrorLog(Base):

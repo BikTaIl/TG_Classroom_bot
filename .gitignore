@@ -1,1 +1,21 @@
 .env
+.venv
+testing.py
+buffer.py
+check.py
+my_db.py
+
+
+# macOS
+.DS_Store
+
+# PyCharm
+.idea/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd

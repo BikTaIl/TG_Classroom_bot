@@ -8,6 +8,20 @@ from decimal import Decimal
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
     ErrorLog, AccessDenied
 
+async def create_user(telegram_id: int, telegram_username: str, session: AsyncSession) -> None:
+    """"Создать профиль юзера при старте"""
+    async with session.begin():
+        new_user: User = User(
+            telegram_id=telegram_id,
+            telegram_username = telegram_username,
+            active_role = None,
+            active_github_username = None,
+            full_name = None,
+            banned = False,
+            notifications_enabled = True
+        )
+        session.add(new_user)
+        
 
 async def login_link_github(telegram_id: int, session: AsyncSession) -> str:
     """Вернуть URL для привязки GitHub-аккаунта к пользователю Telegram."""
