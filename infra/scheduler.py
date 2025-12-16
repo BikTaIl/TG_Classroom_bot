@@ -5,6 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from commands.sync import sync_function
 from commands.sync import get_students_nearing_deadline
+from commands.sync import delete_overdued_states
 from models.gh_client import GitHubClassroomClient
 from models.db import ErrorLog, Assistant, Assignment, User, Notification, Submission, GitOrganization, Course
 from db import AsyncSessionLocal
@@ -33,6 +34,8 @@ async def check_internal_tables():
         for item in res:
             message: str = f"Дедлайн по заданию {item[2]} в курсе {item[1]} наступит через {item[3]} часов"
             await bot.send_message(item[0], message, reply_markup=return_to_the_start())
+    async with AsyncSessionLocal() as session:
+        await delete_overdued_states(session)
 
 
 

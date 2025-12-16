@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import text, func
+from sqlalchemy import text, func, delete
 from models.gh_client import GitHubClassroomClient
-from models.db import Submission, GithubAccount, Assignment, Course, User, Notification
+from models.db import Submission, GithubAccount, Assignment, Course, User, Notification, OAuthState
 from typing import Optional
 from datetime import datetime
 
@@ -66,9 +66,9 @@ async def sync_function(session: AsyncSession) -> None:
                             score=score
                         )
                         all_submissions.append(new_submission)
-            await session.execute(text("DELETE FROM courses"))
-            await session.execute(text("DELETE FROM assignments"))
-            await session.execute(text("DELETE FROM submissions"))
+            await session.execute(delete(Course))
+            await session.execute(delete(Assignment))
+            await session.execute(delete(Submission))
             for course in all_courses:
                 session.add(course)
             for assignment in all_assignments:
@@ -120,3 +120,14 @@ async def get_students_nearing_deadline(session: AsyncSession) -> set[tuple[int,
         for row in result
     }
     return notificated_students
+
+async def delete_overdued_states(session: AsyncSession) -> None:
+    """Функция удаляет все просроченные OAuthStates
+    :param session: AsyncSession
+    :return None
+    """
+    now = func.now()
+    fifteen_minutes_earlier = now - text("INTERVAL '15 minutes'")
+    async with session.begin():
+        query = delete(OAuthState).where(OAuthState.created_at < fifteen_minutes_earlier)
+        await session.execute(query)
