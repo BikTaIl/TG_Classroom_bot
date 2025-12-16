@@ -4,18 +4,11 @@ from sqlalchemy import select, update, delete, and_, or_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from decimal import Decimal
-from teacher_and_assistant_commands import _check_permission
+from .teacher_and_assistant_commands import _check_permission
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
     ErrorLog, AccessDenied, GitLogs
 
 SUCCESS_STATUS = 200
-
-
-async def _get_user_by_username(username: str, session: AsyncSession) -> Optional[User]:
-    """Найти пользователя по username"""
-    stmt = select(User).where(User.telegram_username == username)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
 
 
 async def grant_teacher_role(

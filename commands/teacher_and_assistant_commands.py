@@ -4,10 +4,16 @@ from sqlalchemy import select, update, delete, and_, or_, func, case, distinct, 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from decimal import Decimal
-from admin_commands import _get_user_by_username
 
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
     ErrorLog, AccessDenied
+
+
+async def _get_user_by_username(username: str, session: AsyncSession) -> Optional[User]:
+    """Найти пользователя по username"""
+    stmt = select(User).where(User.telegram_username == username)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def _check_permission(telegram_id: int, key_roles: list[str], course_id: int, session: AsyncSession) -> None:
