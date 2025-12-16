@@ -1,101 +1,607 @@
+from typing import Optional, Sequence, Mapping, Any
+from datetime import datetime, date
+from sqlalchemy import select, update, delete, and_, or_, func, case, distinct, true
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, Any, Sequence, Mapping
+from sqlalchemy.orm import selectinload
+from decimal import Decimal
+
+from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
+    ErrorLog, AccessDenied
+
+
+async def _get_user_by_username(username: str, session: AsyncSession) -> Optional[User]:
+    """Найти пользователя по username"""
+    stmt = select(User).where(User.telegram_username == username)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def _check_permission(telegram_id: int, key_roles: list[str], course_id: int, session: AsyncSession) -> None:
+    """Проверить, имеет ли пользователь активную роль"""
+    query = select(User.active_role, User.banned).where(User.telegram_id == telegram_id)
+    role = await session.execute(query)
+    if role.all()[0] not in key_roles or role.all()[1] is True:
+        raise AccessDenied("Недостаточно прав.")
+    if role.first() == 'teacher' and 'teacher' in key_roles:
+        teacher_query = select().where(Course.classroom_id == course_id & Course.teacher_telegram_id == telegram_id)
+        teacher = await session.execute(teacher_query)
+        if not teacher:
+            raise ValueError(f"Недостаточно прав.")
+    if role.first() == 'assistant' and 'assistant' in key_roles:
+        assistant_query = select().where(Assistant.course_id == course_id & Assistant.telegram_id == telegram_id)
+        assistant = await session.execute(assistant_query)
+        if not assistant:
+            raise ValueError("Недостаточно прав.")
 
 
 async def set_teacher_active_course(telegram_id: int, course_id: Optional[int], session: AsyncSession) -> None:
     """Установить/сбросить активный курс пользователя."""
+    pass  # жду деталей реализации
 
 
 async def set_teacher_active_assignment(telegram_id: int, assignment_id: Optional[int], session: AsyncSession) -> None:
     """Установить/сбросить активное задание для пользователя."""
+    pass  # жду деталей реализации
 
 
 async def get_course_students_overview(
         telegram_id: int,
-        session: AsyncSession,
-        course_id: Optional[int] = None
+        course_id: int,
+        session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
-    """Сводка: ФИО, Курс, GitHub, просрочки, средний балл, дата последнего коммита. Сортировка по ФИО и названию курса (в соответствующем порядке)"""
+    """Сводка: ФИО, GitHub, дата последней отправки, средний балл, несданные задания."""
+    await _check_permission(telegram_id, ['teacher', 'assistant', 'admin'], course_id, session)
+
+    course_students_subq = select(
+        distinct(Submission.student_telegram_id)
+    ).join(
+        Assignment, Assignment.id == Submission.assignment_id
+    ).where(
+        Assignment.classroom_id == course_id
+    ).subquery()
+
+    assignment_ids_result = await session.execute(
+        select(Assignment.id).where(Assignment.classroom_id == course_id)
+    )
+    assignment_ids = assignment_ids_result.scalars().all()
+
+    if not assignment_ids:
+        return []
+
+    students_query = select(
+        User.telegram_id,
+        User.full_name.label('full_name'),
+        User.active_github_username.label('github_username'),
+        func.max(Submission.submitted_at).label("last_submission_time"),
+        func.avg(
+            case(
+                (Submission.score.is_not(None), Submission.score),
+                else_=None
+            )
+        ).label("avg_score")
+    ).select_from(User).join(
+        course_students_subq,
+        course_students_subq.c.student_telegram_id == User.telegram_id
+    ).outerjoin(
+        Submission,
+        and_(
+            Submission.student_telegram_id == User.telegram_id,
+            Submission.assignment_id.in_(assignment_ids)
+        )
+    ).group_by(
+        User.telegram_id, User.full_name, User.active_github_username
+    ).order_by(User.full_name)
+
+    students_result = await session.execute(students_query)
+    students_data = students_result.mappings().all()
+
+    if students_data:
+        student_ids = [s['telegram_id'] for s in students_data]
+
+        all_assignments_query = select(
+            Assignment.id,
+            Assignment.title
+        ).where(Assignment.classroom_id == course_id)
+
+        all_assignments_result = await session.execute(all_assignments_query)
+        all_assignments = {a.id: a.title for a in all_assignments_result.all()}
+
+        submitted_query = select(
+            Submission.student_telegram_id,
+            Submission.assignment_id
+        ).where(
+            and_(
+                Submission.assignment_id.in_(assignment_ids),
+                Submission.student_telegram_id.in_(student_ids),
+                Submission.is_submitted == True
+            )
+        )
+
+        submitted_result = await session.execute(submitted_query)
+        submitted_map = {}
+
+        for row in submitted_result.all():
+            student_id = row.student_telegram_id
+            assignment_id = row.assignment_id
+            if student_id not in submitted_map:
+                submitted_map[student_id] = set()
+            submitted_map[student_id].add(assignment_id)
+    overview = []
+
+    for student in students_data:
+        student_id = student['telegram_id']
+
+        # Находим несданные задания
+        not_submitted = []
+        if student_id in submitted_map:
+            submitted_assignments = submitted_map[student_id]
+            for assignment_id, title in all_assignments.items():
+                if assignment_id not in submitted_assignments:
+                    not_submitted.append(title)
+        else:
+            not_submitted = list(all_assignments.values())
+
+        overview.append({
+            "full_name": student['full_name'],
+            "github_username": student['github_username'],
+            "last_submission_time": student['last_submission_time'],
+            "avg_score": float(student['avg_score']) if student['avg_score'] is not None else None,
+            "not_submitted_assignments": not_submitted,
+            "not_submitted_count": len(not_submitted)
+        })
+
+    return overview
 
 
 async def get_assignment_students_status(
         telegram_id: int,
-        session: AsyncSession,
-        assignment_id: Optional[int] = None
+        assignment_id: Optional[int] = None,
+        session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
     """Сводка по отдельному заданию: ФИО, GitHub, статус. Сортировка по статусу и ФИО"""
+    if not assignment_id:
+        return []
+    course_query = select(Assignment.classroom_id).where(Assignment.id == assignment_id)
+    course = await session.execute(course_query)
+    await _check_permission(telegram_id, ['teacher', 'assistant', 'admin'], course.scalar_one(), session)
+
+    ass_query = select(
+        Assignment.title.label('title'),
+        User.full_name.label('full_name'),
+        User.active_github_username.label('github_username'),
+        Submission.is_submitted.label('is_submitted'),
+        Submission.score.label('score'),
+    ).join(
+        Submission, Submission.assignment_id == Assignment.id
+    ).join(
+        User, User.telegram_id == Submission.student_telegram_id
+    ).where(
+        Assignment.id == assignment_id
+    ).order_by(User.full_name).order_by(Submission.is_submitted)
+    result = await session.execute(ass_query)
+    result_data = result.mappings().all()
+    overview = []
+    for row in result_data:
+        status = "не сдано"
+        if row.is_submitted:
+            if row.score is not None:
+                status = "оценено"
+            else:
+                status = "ожидает оценки"
+        overview.append({
+            "title": row.title,
+            "full_name": row.full_name,
+            "github_username": row.github_username,
+            "status": status,
+            "grade": row.score if row.score is not None else None
+        })
 
 
 async def get_classroom_users_without_bot_accounts(
         telegram_id: int,
-        session: AsyncSession,
-        course_id: Optional[int] = None
+        course_id: Optional[int] = None,
+        session: AsyncSession = None
 ) -> Sequence[str]:
-    """GitHub-логины студентов, которых нет в боте. Таковыми считаем тех, кто хоть что-то сдавал по некоторому заданию"""
+    """GitHub-логины студентов, которых нет в боте."""
+    await _check_permission(telegram_id, ['teacher', 'assistant', 'admin'], course_id, session)
+    query = select(
+        distinct(Submission.student_github_username)
+    ).select_from(Submission).join(
+        Assignment, Assignment.id == Submission.assignment_id
+    ).where(
+        and_(
+            Assignment.classroom_id == course_id,
+            Submission.student_github_username.is_not(None),
+            Submission.student_github_username.not_in(
+                select(User.active_github_username).where(
+                    User.active_github_username.is_not(None)
+                )
+            )
+        )
+    )
+
+    result = await session.execute(query)
+    return result.scalars().all()
 
 
 async def get_course_deadlines_overview(
         telegram_id: int,
-        session: AsyncSession,
-        course_id: Optional[int] = None
+        course_id: Optional[int] = None,
+        session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
     """Сводка всех дедлайнов. Сортировка по дд"""
+    query = select(
+        Assignment.id,
+        Assignment.title,
+        Assignment.deadline_full,
+        Course.name.label("course_name"),
+        Course.classroom_id,
+        func.count(distinct(GithubAccount.github_username)).label("total_students")
+    ).join(
+        Course, Assignment.classroom_id == Course.classroom_id
+    ).outerjoin(
+        GithubAccount, true()
+    ).outerjoin(
+        Assistant,
+        and_(
+            Assistant.course_id == Course.classroom_id,
+            Assistant.telegram_id == telegram_id
+        )
+    ).where(
+        or_(
+            Course.teacher_telegram_id == telegram_id,
+            Assistant.telegram_id == telegram_id
+        )
+    ).group_by(
+        Assignment.id,
+        Assignment.title,
+        Assignment.deadline_full,
+        Course.name,
+        Course.classroom_id
+    )
+
+    if course_id:
+        query = query.where(Course.classroom_id == course_id)
+
+    result = await session.execute(query)
+    assignments = result.all()
+
+    if not assignments:
+        return []
+
+    assignment_ids = [a.id for a in assignments]
+
+    submissions_query = select(
+        Submission.assignment_id,
+        func.count(Submission.id).label("submitted_count")
+    ).where(
+        and_(
+            Submission.assignment_id.in_(assignment_ids),
+            Submission.is_submitted == True
+        )
+    ).group_by(Submission.assignment_id)
+
+    submissions_result = await session.execute(submissions_query)
+    submissions_map = {row.assignment_id: row.submitted_count for row in submissions_result.all()}
+
+    overview = []
+    for assignment in assignments:
+        submitted_count = submissions_map.get(assignment.id, 0)
+        total_students = assignment.total_students or 0
+
+        overview.append({
+            "assignment": assignment.title,
+            "course": assignment.course_name,
+            "deadline": assignment.deadline_full,
+            "submitted_count": submitted_count,
+            "not_submitted_count": total_students - submitted_count if total_students > 0 else 0
+        })
+
+    overview.sort(key=lambda x: x["deadline"] or datetime.max)
+
+    return overview
 
 
 async def get_tasks_to_grade_summary(
         telegram_id: int,
-        session: AsyncSession,
-        course_id: Optional[int] = None
+        course_id: Optional[int] = None,
+        session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
     """Сводка по задачам, которые нужно оценить. Сортировка по дд и названию курса"""
+    query = select(
+        Assignment.title,
+        Assignment.deadline_full,
+        Course.name.label("course_name"),
+        func.count(Submission.id).label("total_submissions"),
+        func.count(case((Submission.score.is_not(None), 1))).label("graded_count")
+    ).join(
+        Course, Assignment.classroom_id == Course.classroom_id
+    ).join(
+        Submission, Submission.assignment_id == Assignment.id
+    ).where(
+        and_(
+            Assignment.deadline_full < datetime.now(),
+            or_(
+                Course.teacher_telegram_id == telegram_id,
+                Assistant.telegram_id == telegram_id
+            )
+        )
+    ).outerjoin(
+        Assistant, Assistant.course_id == Course.classroom_id
+    ).group_by(
+        Assignment.title, Assignment.deadline_full, Course.name
+    )
+
+    if course_id:
+        query = query.where(Course.classroom_id == course_id)
+
+    query = query.order_by(Assignment.deadline_full, Course.name)
+
+    result = await session.execute(query)
+    rows = result.all()
+
+    summary = []
+    for row in rows:
+        to_grade = row.total_submissions - row.graded_count
+        summary.append({
+            "assignment": row.title,
+            "course": row.course_name,
+            "deadline": row.deadline_full,
+            "total_submissions": row.total_submissions,
+            "graded_count": row.graded_count,
+            "to_grade_count": to_grade
+        })
+
+    return summary
 
 
 async def get_manual_check_submissions_summary(
         telegram_id: int,
-        session: AsyncSession,
-        course_id: Optional[int] = None
+        course_id: Optional[int] = None,
+        session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
-    """Сводка по ручной проверке: ФИО, GitHub, даты сдачи и дедлайна. Сортировка по дд и названию курса"""
+    """Сводка по ручной проверке: ФИО, GitHub, даты сдачи и дедлайна."""
+    query = select(
+        User.full_name,
+        GithubAccount.github_username,
+        Assignment.title,
+        Assignment.deadline_full,
+        Submission.submitted_at,
+        Course.name.label("course_name")
+    ).join(
+        GithubAccount, User.telegram_id == GithubAccount.user_telegram_id
+    ).join(
+        Submission, Submission.student_telegram_id == User.telegram_id
+    ).join(
+        Assignment, Submission.assignment_id == Assignment.id
+    ).join(
+        Course, Assignment.classroom_id == Course.classroom_id
+    ).where(
+        and_(
+            Assignment.grading_mode == "manual",
+            or_(
+                Course.teacher_telegram_id == telegram_id,
+                Assistant.telegram_id == telegram_id
+            ),
+            Submission.is_submitted == True,
+            Submission.score.is_(None)
+        )
+    ).outerjoin(
+        Assistant, Assistant.course_id == Course.classroom_id
+    )
+
+    if course_id:
+        query = query.where(Course.classroom_id == course_id)
+
+    query = query.order_by(Assignment.deadline_full, Course.name)
+
+    result = await session.execute(query)
+    rows = result.all()
+
+    summary = []
+    for row in rows:
+        summary.append({
+            "course": row.course_name,
+            "assignment": row.title,
+            "full_name": row.full_name,
+            "github_username": row.github_username,
+            "submitted_at": row.submitted_at,
+            "deadline": row.deadline_full
+        })
+
+    return summary
 
 
 async def get_teacher_deadline_notification_payload(
         teacher_telegram_id: int,
         assignment_id: int,
-        session: AsyncSession
+        session: AsyncSession = None
 ) -> Optional[Mapping[str, Any]]:
     """Данные для уведомления: сколько не сдали, список студентов, дедлайн."""
+
+    assignment_query = select(
+        Assignment,
+        Course
+    ).join(
+        Course, Assignment.classroom_id == Course.classroom_id
+    ).where(
+        Assignment.id == assignment_id
+    )
+
+    result = await session.execute(assignment_query)
+    row = result.first()
+
+    if not row:
+        return None
+
+    assignment, course = row.Assignment, row.Course
+
+    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course.classroom_id, session)
+    students_in_course_query = select(
+        distinct(Submission.student_telegram_id)
+    ).join(
+        Assignment, Submission.assignment_id == Assignment.id
+    ).where(
+        Assignment.classroom_id == course.classroom_id
+    )
+
+    students_result = await session.execute(students_in_course_query)
+    student_telegram_ids = [row[0] for row in students_result.all()]
+
+    if not student_telegram_ids:
+        # Если нет студентов по сабмитам, пытаемся получить через GitHub аккаунты
+        # (альтернативный подход, менее точный)
+        students_query = select(User.telegram_id).distinct()
+        students_result = await session.execute(students_query)
+        student_telegram_ids = [row[0] for row in students_result.all()]
+    not_submitted_students = []
+
+    for student_id in student_telegram_ids:
+        submission_query = select(Submission).where(
+            and_(
+                Submission.assignment_id == assignment_id,
+                Submission.student_telegram_id == student_id,
+                Submission.is_submitted == True
+            )
+        )
+
+        submission_result = await session.execute(submission_query)
+        submission = submission_result.scalar_one_or_none()
+        if not submission:
+            student_query = select(
+                User.full_name,
+                GithubAccount.github_username
+            ).outerjoin(
+                GithubAccount, User.telegram_id == GithubAccount.user_telegram_id
+            ).where(
+                User.telegram_id == student_id
+            )
+
+            student_result = await session.execute(student_query)
+            student_row = student_result.first()
+
+            if student_row:
+                full_name, github_username = student_row
+                not_submitted_students.append({
+                    "full_name": full_name or "Неизвестно",
+                    "github_username": github_username or "Нет GitHub"
+                })
+
+    return {
+        "assignment": assignment.title,
+        "course_name": course.name,
+        "deadline": assignment.deadline_full,
+        "not_submitted_count": len(not_submitted_students),
+        "not_submitted_students": not_submitted_students,
+        "assignment_id": assignment_id,
+        "course_id": course.classroom_id
+    }
 
 
 async def add_course_assistant(
         teacher_telegram_id: int,
         course_id: int,
         assistant_telegram_username: str,
-        session: AsyncSession
+        session: AsyncSession = None
 ) -> None:
     """Добавить ассистента по username. Только для учителя"""
+    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
+    assistant = await _get_user_by_username(assistant_telegram_username, session)
+    if not assistant:
+        raise ValueError(f"Пользователь {assistant_telegram_username} не найден")
+    course_stmt = select(Course).where(
+        and_(
+            Course.classroom_id == course_id,
+            Course.teacher_telegram_id == teacher_telegram_id
+        )
+    )
+    course_result = await session.execute(course_stmt)
+    course = course_result.scalar_one_or_none()
+    if not course:
+        raise AccessDenied("Курс не найден или вы не являетесь его владельцем.")
+
+    if assistant.telegram_id == course.teacher_telegram_id:
+        raise ValueError("Учитель курса не может быть добавлен как ассистент.")
+
+    existing_assistant_stmt = select(Assistant).where(
+        and_(
+            Assistant.telegram_id == assistant.telegram_id,
+            Assistant.course_id == course_id
+        )
+    )
+    existing_result = await session.execute(existing_assistant_stmt)
+    existing_assistant = existing_result.scalar_one_or_none()
+
+    if existing_assistant:
+        raise ValueError("Ассистент уже добавлен в этот курс")
+
+    new_assistant = Assistant(
+        telegram_id=assistant.telegram_id,
+        course_id=course_id
+    )
+    session.add(new_assistant)
+    await session.commit()
 
 
 async def remove_course_assistant(
         teacher_telegram_id: int,
         course_id: int,
         assistant_telegram_username: str,
-        session: AsyncSession
+        session: AsyncSession = None
 ) -> None:
     """Удалить ассистента. Только для учителя"""
+
+    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
+    assistant = await _get_user_by_username(assistant_telegram_username, session)
+    if not assistant:
+        raise ValueError(f"Пользователь {assistant_telegram_username} не найден")
+    course_stmt = select(Course).where(
+        and_(
+            Course.classroom_id == course_id,
+            Course.teacher_telegram_id == teacher_telegram_id
+        )
+    )
+    course_result = await session.execute(course_stmt)
+    course = course_result.scalar_one_or_none()
+    if not course:
+        raise AccessDenied("Курс не найден или вы не являетесь его владельцем.")
+
+    existing_assistant_stmt = select(Assistant).where(
+        and_(
+            Assistant.telegram_id == assistant.telegram_id,
+            Assistant.course_id == course_id
+        )
+    )
+    existing_result = await session.execute(existing_assistant_stmt)
+    existing_assistant = existing_result.scalar_one_or_none()
+
+    if not existing_assistant:
+        raise ValueError("Ассистент уже добавлен в этот курс")
+
+    new_assistant = Assistant(
+        telegram_id=assistant.telegram_id,
+        course_id=course_id
+    )
+    session.add(new_assistant)
+    stmt = delete(Assistant).where(Assistant.telegram_id == assistant.telegram_id)
+    await session.execute(stmt)
+    await session.commit()
 
 
 async def create_course_announcement(
         teacher_telegram_id: int,
         course_id: int,
         text: str,
-        session: AsyncSession
+        session: AsyncSession = None
 ) -> None:
     """Создать объявление для курса. Только для учителя"""
+    pass  # жду указания к реализации
 
 
 async def trigger_manual_sync_for_teacher(
         course_id: int,
         teacher_telegram_id: int,
-        session: AsyncSession
-        ) -> bool:
-        """Выполнить ручную синхронизацию данных по курсу. Только для учителя"""
+        session: AsyncSession = None,
+        github: Any = None
+) -> bool:
+    """Выполнить ручную синхронизацию данных по курсу. Только для учителя"""

@@ -84,6 +84,7 @@ async def complete_github_link(code: str, state: str, session: AsyncSession) -> 
             user_telegram_id=telegram_id
         )
         session.add(account)
+        user.active_github_username = github_user["login"]
         await session.execute(
             delete(OAuthState).where(OAuthState.state == state)
         )
