@@ -7,7 +7,8 @@ def get_start_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Разлогинить текущий аккаунт из GitHub", callback_data="logout_user")],
         [InlineKeyboardButton(text="Выбрать активную роль", callback_data="set_active_role")],
         [InlineKeyboardButton(text="Глобально сменить рычажок уведомлений по дд для пользователя", callback_data="toggle_global_notifications")],
-        [InlineKeyboardButton(text="Сменить гитхаб-аккаунт на другой залогиненный", callback_data="change_git_account")]
+        [InlineKeyboardButton(text="Сменить гитхаб-аккаунт на другой залогиненный", callback_data="change_git_account")],
+        [InlineKeyboardButton(text="Ввести/изменить ФИО", callback_data="enter_name")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -22,24 +23,30 @@ def choose_role() -> InlineKeyboardMarkup:
 
 def return_to_the_start() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="Вернуться на главную панель", callback_data="start")]
+        [InlineKeyboardButton(text="Вернуться в главное меню", callback_data="start")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def go_to_admin() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="Перейти на панель администратора", callback_data="start_admin")]
+        [InlineKeyboardButton(text="Перейти в меню администратора", callback_data="start_admin")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def go_to_teacher() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="Перейти на панель учителя", callback_data="start_teacher")]
+        [InlineKeyboardButton(text="Перейти в меню учителя", callback_data="start_teacher")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def go_to_assistant() -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(text="Перейти на панель ассистента", callback_data="start_assistant")]
+        [InlineKeyboardButton(text="Перейти в меню ассистента", callback_data="start_assistant")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def registration_url(url: str) -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="Пройти авторизацию по ссылке:", url=url)]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

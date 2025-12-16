@@ -1,6 +1,3 @@
-import asyncio
-from pyexpat.errors import messages
-
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -124,3 +121,19 @@ async def process_change_git_account_second(message: Message, state: FSMContext)
         await message.answer("Аккаунт не был переключен. Возможно, вы не вошли в этот аккаунт или логин введен неправильно.", reply_markup=return_to_the_start())
     finally:
         await state.clear()
+
+@common_router.callback_query(F.data == "enter_name")
+async def process_enter_name_first(cb: CallbackQuery, state: FSMContext):
+    await state.set_state(EnterName.waiting_name)
+    await cb.message.answer(
+        "Введите свое ФИО:"
+    )
+    await cb.answer()
+
+@common_router.message(EnterName.waiting_name)
+async def process_enter_name_second(message: Message, state: FSMContext):
+    name = message.text
+    async with AsyncSessionLocal() as session:
+        await enter_name(message.from_user.id, name, session)
+    await message.answer("ФИО успешно получено!", reply_markup=return_to_the_start())
+    await state.clear()

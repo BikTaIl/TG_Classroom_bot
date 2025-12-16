@@ -1,4 +1,3 @@
-import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
@@ -89,20 +88,20 @@ async def process_unban_user_second(message: Message, state: FSMContext):
 
 #Команда свода ошибок
 @admin_router.callback_query(F.data == "unban_user")
-async def process_unban_user_first(cb: CallbackQuery, state: FSMContext):
+async def process_get_error_count_for_day_first(cb: CallbackQuery, state: FSMContext):
     await state.set_state(FindErrors.waiting_date)
     await cb.message.answer(
-        "Пришли дату, для которой хочешь узнать сводку, или напиши '-' для общей сводки"
+        "Пришли дату, для которой хочешь узнать сводку в формате ГГГГ-ММ-ДД, или напиши '-' для общей сводки"
     )
     await cb.answer()
 
 @admin_router.message(FindErrors.waiting_date)
-async def process_unban_user_second(message: Message, state: FSMContext):
-    target_date: str = message.text
+async def process_get_error_count_for_day_second(message: Message, state: FSMContext):
+    target_date: list[str] = message.text.split('-')
     async with AsyncSessionLocal() as session:
-        if target_date != "-":
-            result = await get_error_count_for_day(message.from_user.id, session, date(target_date))
-        else:
+        try:
+            result = await get_error_count_for_day(message.from_user.id, session, date(day=int(target_date[0]), month=int(target_date[1]), year=int(target_date[2])))
+        except TypeError:
             result = await get_error_count_for_day(message.from_user.id, session)
     await message.answer(f"Ошибок за указанный период: {result}", reply_markup=return_to_the_menu())
     await state.clear()

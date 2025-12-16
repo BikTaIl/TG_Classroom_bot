@@ -1,9 +1,6 @@
-import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
-
-from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.teacher_keyboards import *
 from .states import *
@@ -93,7 +90,10 @@ async def process_get_classroom_users_without_bot_accounts_teacher(cb: CallbackQ
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
         overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    result = ""
+    for username in overview:
+        result += username + "\n"
+    await cb.message.answer(result, reply_markup=return_to_the_menu())
     await cb.answer()
 
 

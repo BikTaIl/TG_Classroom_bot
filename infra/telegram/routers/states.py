@@ -1,4 +1,5 @@
 from aiogram.fsm.state import State, StatesGroup
+from sqlalchemy.orm.base import state_class_str
 
 
 class AddTeacher(StatesGroup):
@@ -45,3 +46,6 @@ class RemoveDeadline(StatesGroup):
 
 class SendMessage(StatesGroup):
     waiting_message = State()
+
+class EnterName(StatesGroup):
+    waiting_name = State()

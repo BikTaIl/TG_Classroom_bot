@@ -33,3 +33,6 @@ async def toggle_global_notifications(telegram_id: int, session: AsyncSession) -
 
 async def change_git_account(telegram_id: int, github_login: str, session: AsyncSession) -> None:
     """Сменить гитхаб-аккаунт на другой залогиненный"""
+
+async def enter_name(telegram_id: int, name: str, session: AsyncSession) -> None:
+    """Ввести ФИО"""

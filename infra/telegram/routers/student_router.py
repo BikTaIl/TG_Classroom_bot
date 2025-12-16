@@ -1,4 +1,3 @@
-import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
@@ -47,7 +46,7 @@ async def process_get_student_notification_rules(cb: CallbackQuery, state: FSMCo
     async with AsyncSessionLocal() as session:
         rules = await get_student_notification_rules(cb.from_user.id, session)
     answer = ""
-    for i in len(rules):
+    for i in range(len(rules)):
         answer += f"Дедлайн {i + 1} наступает за {rules[i]} часов до сдачи \n"
     await cb.message.answer(answer, reply_markup=return_to_the_menu())
     await cb.answer()
