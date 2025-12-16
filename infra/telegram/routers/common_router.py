@@ -60,8 +60,8 @@ async def process_set_active_role_student(cb: CallbackQuery, state: FSMContext):
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_student())
-    except:
-        await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
+    except AccessDenied:
+        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
     await cb.answer()
 
 @common_router.callback_query(F.data == "change_role_teacher")
@@ -72,8 +72,8 @@ async def process_set_active_role_teacher(cb: CallbackQuery, state: FSMContext):
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_teacher())
-    except:
-        await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
+    except AccessDenied:
+        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
     await cb.answer()
 
 @common_router.callback_query(F.data == "change_role_admin")
@@ -84,8 +84,8 @@ async def process_set_active_role_admin(cb: CallbackQuery, state: FSMContext):
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_admin())
-    except:
-        await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
+    except AccessDenied:
+        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
     await cb.answer()
 
 @common_router.callback_query(F.data == "change_role_assistant")
@@ -96,8 +96,8 @@ async def process_set_active_role_assistant(cb: CallbackQuery, state: FSMContext
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_assistant())
-    except:
-        await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
+    except AccessDenied:
+        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
     await cb.answer()
 
 
@@ -126,8 +126,8 @@ async def process_change_git_account_second(message: Message, state: FSMContext)
         async with AsyncSessionLocal() as session:
             await change_git_account(message.from_user.id, login, session)
         await message.answer("Аккаунт успешно переключен!", reply_markup=return_to_the_start())
-    except:
-        await message.answer("Аккаунт не был переключен. Возможно, вы не вошли в этот аккаунт или логин введен неправильно.", reply_markup=return_to_the_start())
+    except AccessDenied:
+        await message.answer("Нет доступа к данному аккаунту.", reply_markup=return_to_the_start())
     finally:
         await state.clear()
 

@@ -105,7 +105,7 @@ async def process_get_error_count_for_day_second(message: Message, state: FSMCon
     target_date: list[str] = message.text.split('-')
     async with AsyncSessionLocal() as session:
         try:
-            result = await get_error_count_for_day(message.from_user.id, session, date(day=int(target_date[0]), month=int(target_date[1]), year=int(target_date[2])))
+            result = await get_error_count_for_day(message.from_user.id, date(day=int(target_date[0]), month=int(target_date[1]), year=int(target_date[2])), session)
         except TypeError:
             result = await get_error_count_for_day(message.from_user.id, session)
     await message.answer(f"Ошибок за указанный период: {result}", reply_markup=return_to_the_menu())
