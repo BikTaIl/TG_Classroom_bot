@@ -1,4 +1,3 @@
-import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
@@ -13,12 +12,14 @@ student_router = Router()
 
 @student_router.callback_query(F.data == "start_student")
 async def admin_panel(cb: CallbackQuery):
-    """Отображение клавиатуры админа"""
+    """Функция отображения панели студента.
+       Отображается только по кнопке, через команду зайти нельзя."""
     await cb.message.answer("Панель студента:", reply_markup=get_student_menu())
     await cb.answer()
 
 @student_router.callback_query(F.data == "set_student_active_course")
 async def process_set_student_active_course_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции set_student_active_course"""
     await state.set_state(ChangeCourse.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого курса или '-', если хотите сбросить курс"
@@ -27,15 +28,14 @@ async def process_set_student_active_course_first(cb: CallbackQuery, state: FSMC
 
 @student_router.message(ChangeCourse.waiting_course_id)
 async def process_set_student_active_course_second(message: Message, state: FSMContext):
+    """Ввод ID курса для функции set_student_active_course"""
     course_id = message.text
     try:
         async with AsyncSessionLocal() as session:
             if course_id == '-':
-                await set_student_active_course(message.from_user.id, course_id=None, session=session)
                 await state.update_data(course_id=None)
                 await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
             else:
-                await set_student_active_course(message.from_user.id, course_id=course_id, session=session)
                 await state.update_data(course_id=course_id)
                 await message.answer("Курс установлен", reply_markup=return_to_the_menu())
     except:
@@ -44,16 +44,18 @@ async def process_set_student_active_course_second(message: Message, state: FSMC
 
 @student_router.callback_query(F.data == "get_student_notification_rules")
 async def process_get_student_notification_rules(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_student_notification_rules"""
     async with AsyncSessionLocal() as session:
         rules = await get_student_notification_rules(cb.from_user.id, session)
     answer = ""
-    for i in len(rules):
+    for i in range(len(rules)):
         answer += f"Дедлайн {i + 1} наступает за {rules[i]} часов до сдачи \n"
     await cb.message.answer(answer, reply_markup=return_to_the_menu())
     await cb.answer()
 
 @student_router.callback_query(F.data == "add_student_notification_rule")
 async def process_add_student_notification_rule_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции add_student_notification_rule"""
     await state.set_state(NewDeadline.waiting_hours)
     await cb.message.answer(
         "Введите количество часов, за которое хотите получить уведомление о дедлайне:"
@@ -63,6 +65,7 @@ async def process_add_student_notification_rule_first(cb: CallbackQuery, state: 
 
 @student_router.message(NewDeadline.waiting_hours)
 async def process_add_student_notification_rule_second(message: Message, state: FSMContext):
+    """Ввод количества часов перед дедлайном для уведомления для функции add_student_notification_rule"""
     hours = message.text
     try:
         hours = int(hours)
@@ -80,15 +83,17 @@ async def process_add_student_notification_rule_second(message: Message, state: 
 
 @student_router.callback_query(F.data == "remove_student_notification_rule")
 async def process_remove_student_notification_rule_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции remove_student_notification_rule"""
     await state.set_state(RemoveDeadline.waiting_hours)
     await cb.message.answer(
-        "Введите количество часов, за которое хотите получить уведомление о дедлайне:"
+        "Введите количество часов, за которое перед дедлайном стоит уведомление, необходимое к удалению:"
     )
     await cb.answer()
 
 
 @student_router.message(RemoveDeadline.waiting_hours)
 async def process_remove_student_notification_rule_second(message: Message, state: FSMContext):
+    """Ввод количества часов перед дедлайном для уведомления для функции remove_student_notification_rule"""
     hours = message.text
     try:
         hours = int(hours)
@@ -106,6 +111,7 @@ async def process_remove_student_notification_rule_second(message: Message, stat
 
 @student_router.callback_query(F.data == "reset_student_notification_rules_to_default")
 async def process_reset_student_notification_rules_to_default(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции reset_student_notification_rules_to_default"""
     async with AsyncSessionLocal() as session:
         await reset_student_notification_rules_to_default(cb.from_user.id, session)
     await cb.message.answer("Настройки уведомлений успешно сброшены!", reply_markup=return_to_the_menu())
@@ -114,6 +120,7 @@ async def process_reset_student_notification_rules_to_default(cb: CallbackQuery,
 
 @student_router.callback_query(F.data == "get_student_active_assignments_summary")
 async def process_get_student_active_assignments_summary(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_student_active_assignments_summary"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -125,6 +132,7 @@ async def process_get_student_active_assignments_summary(cb: CallbackQuery, stat
 
 @student_router.callback_query(F.data == "get_student_overdue_assignments_summary")
 async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_student_overdue_assignments_summary"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -135,6 +143,7 @@ async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, sta
 
 @student_router.callback_query(F.data == "get_student_grades_summary")
 async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_student_grades_summary"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -145,6 +154,7 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
 
 @student_router.callback_query(F.data == "get_student_grades_summary")
 async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_student_grades_summary"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
@@ -155,6 +165,7 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
 
 @student_router.callback_query(F.data == "submit_course_feedback")
 async def process_submit_course_feedback_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции submit_course_feedback"""
     await state.set_state(SendMessage.waiting_message)
     await cb.message.answer(
         "Введите сообщение, которое хотите отправить:"
@@ -163,6 +174,7 @@ async def process_submit_course_feedback_first(cb: CallbackQuery, state: FSMCont
 
 @student_router.message(SendMessage.waiting_message)
 async def process_submit_course_feedback_second(message: Message, state: FSMContext):
+    """Ввод сообщения для функции submit_course_feedback"""
     await state.update_data(message=message.text)
     await state.clear()
     await message.answer(
@@ -171,6 +183,7 @@ async def process_submit_course_feedback_second(message: Message, state: FSMCont
 
 @student_router.callback_query(F.data == "is_anonymus")
 async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции is_anonymus"""
     all_data = await state.get_data()
     message_send = all_data.get("message")
     course_id = all_data.get("course_id")
@@ -181,6 +194,7 @@ async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMC
 
 @student_router.callback_query(F.data == "is_not_anonymus")
 async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции is_not_anonymus"""
     all_data = await state.get_data()
     message_send = all_data.get("message")
     course_id = all_data.get("course_id")

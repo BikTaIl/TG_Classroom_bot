@@ -1,9 +1,6 @@
-import asyncio
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
-
-from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.teacher_keyboards import *
 from .states import *
@@ -14,12 +11,14 @@ teacher_router = Router()
 
 @teacher_router.callback_query(F.data == "start_teacher")
 async def admin_panel(cb: CallbackQuery):
-    """Отображение клавиатуры админа"""
+    """Функция отображения панели учителя.
+       Отображается только по кнопке, через команду зайти нельзя."""
     await cb.message.answer("Панель ассистента:", reply_markup=get_teacher_menu())
     await cb.answer()
 
 @teacher_router.callback_query(F.data == "set_teacher_active_course_teacher")
 async def process_set_teacher_active_course_teacher_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции set_teacher_active_course_teacher"""
     await state.set_state(ChangeCourse.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого курса или '-', если хотите сбросить курс"
@@ -28,6 +27,7 @@ async def process_set_teacher_active_course_teacher_first(cb: CallbackQuery, sta
 
 @teacher_router.message(ChangeCourse.waiting_course_id)
 async def process_set_teacher_active_course_teacher_second(message: Message, state: FSMContext):
+    """Ввод ID курса для функции set_teacher_active_course_teacher"""
     course_id = message.text
     try:
         async with AsyncSessionLocal() as session:
@@ -37,12 +37,13 @@ async def process_set_teacher_active_course_teacher_second(message: Message, sta
             else:
                 await state.update_data(course_id=course_id)
                 await message.answer("Курс установлен", reply_markup=return_to_the_menu())
-    except:
+    except AccessDenied:
         await message.answer("ID курса написан неправильно или к нему нет доступа", reply_markup=return_to_the_menu())
 
 
 @teacher_router.callback_query(F.data == "set_teacher_active_assignment_teacher")
 async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции set_teacher_active_assignment_teacher"""
     await state.set_state(ChangeCourse.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого задания или '-', если хотите сбросить его."
@@ -51,6 +52,7 @@ async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery,
 
 @teacher_router.message(ChangeCourse.waiting_course_id)
 async def process_set_teacher_active_assignment_teacher_second(message: Message, state: FSMContext):
+    """Ввод ID курса для функции set_teacher_active_assignment_teacher"""
     assignment_id = message.text
     try:
         async with AsyncSessionLocal() as session:
@@ -60,12 +62,13 @@ async def process_set_teacher_active_assignment_teacher_second(message: Message,
             else:
                 await state.update_data(assignment_id=assignment_id)
                 await message.answer("Задание установлено", reply_markup=return_to_the_menu())
-    except:
+    except AccessDenied:
         await message.answer("ID задания написан неправильно или к нему нет доступа", reply_markup=return_to_the_menu())
 
 
 @teacher_router.callback_query(F.data == "get_course_students_overview_teacher")
 async def process_get_course_students_overview_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_course_students_overview_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -75,6 +78,7 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
 
 @teacher_router.callback_query(F.data == "get_assignment_students_status_teacher")
 async def process_get_assignment_students_status_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_assignment_students_status_teacher"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
@@ -85,16 +89,21 @@ async def process_get_assignment_students_status_teacher(cb: CallbackQuery, stat
 
 @teacher_router.callback_query(F.data == "get_classroom_users_without_bot_accounts_teacher")
 async def process_get_classroom_users_without_bot_accounts_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_classroom_users_without_bot_accounts_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
         overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    result = ""
+    for username in overview:
+        result += username + "\n"
+    await cb.message.answer(result, reply_markup=return_to_the_menu())
     await cb.answer()
 
 
 @teacher_router.callback_query(F.data == "get_course_deadlines_overview_teacher")
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_course_deadlines_overview_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -105,6 +114,7 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state
 
 @teacher_router.callback_query(F.data == "get_tasks_to_grade_summary_teacher")
 async def process_get_tasks_to_grade_summary_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_tasks_to_grade_summary_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -115,6 +125,7 @@ async def process_get_tasks_to_grade_summary_teacher(cb: CallbackQuery, state: F
 
 @teacher_router.callback_query(F.data == "get_manual_check_submissions_summary_teacher")
 async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_manual_check_submissions_summary_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
@@ -125,6 +136,7 @@ async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery
 
 @teacher_router.callback_query(F.data == "get_teacher_deadline_notification_payload_teacher")
 async def process_get_teacher_deadline_notification_payload_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции get_teacher_deadline_notification_payload_teacher"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
@@ -137,6 +149,7 @@ async def process_get_teacher_deadline_notification_payload_teacher(cb: Callback
 
 @teacher_router.callback_query(F.data == "add_course_assistant_teacher")
 async def process_add_course_assistant_teacher_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции add_course_assistant_teacher"""
     await state.set_state(AddAssistant.waiting_username)
     await cb.message.answer(
         "Введите ник ассистента в виде @username или username:"
@@ -145,6 +158,7 @@ async def process_add_course_assistant_teacher_first(cb: CallbackQuery, state: F
 
 @teacher_router.message(AddAssistant.waiting_username)
 async def process_add_course_assistant_teacher_second(message: Message, state: FSMContext):
+    """Ввод имени для функции add_course_assistant_teacher"""
     username = message.text
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
@@ -158,6 +172,7 @@ async def process_add_course_assistant_teacher_second(message: Message, state: F
 
 @teacher_router.callback_query(F.data == "remove_course_assistant_teacher")
 async def process_remove_course_assistant_teacher_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции remove_course_assistant_teacher"""
     await state.set_state(RemoveAssistant.waiting_username)
     await cb.message.answer(
         "Введите ник ассистента в виде @username или username:"
@@ -166,6 +181,7 @@ async def process_remove_course_assistant_teacher_first(cb: CallbackQuery, state
 
 @teacher_router.message(RemoveAssistant.waiting_username)
 async def process_remove_course_assistant_teacher_second(message: Message, state: FSMContext):
+    """Ввод имени для функции remove_course_assistant_teacher"""
     username = message.text
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
@@ -179,6 +195,7 @@ async def process_remove_course_assistant_teacher_second(message: Message, state
 
 @teacher_router.callback_query(F.data == "create_course_announcement_teacher")
 async def process_create_course_announcement_teacher_first(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции create_course_announcement_teacher"""
     await state.set_state(AddAssistant.waiting_username)
     await cb.message.answer(
         "Введите ник ассистента в виде @username или username:"
@@ -187,6 +204,7 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
 
 @teacher_router.message(AddAssistant.waiting_username)
 async def process_create_course_announcement_teacher_second(message: Message, state: FSMContext):
+    """Ввод имени для функции create_course_announcement_teacher"""
     text = message.text
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
@@ -199,6 +217,7 @@ async def process_create_course_announcement_teacher_second(message: Message, st
 
 @teacher_router.callback_query(F.data == "trigger_manual_sync_for_teacher_teacher")
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state: FSMContext):
+    """Запуск по кнопке функции trigger_manual_sync_for_teacher_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
