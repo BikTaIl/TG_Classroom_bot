@@ -3,7 +3,21 @@ import secrets
 import aiohttp
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from models.db import User
 
+async def create_user(telegram_id: int, telegram_username: str, session: AsyncSession) -> None:
+    """"Создать профиль юзера при старте"""
+    async with session.begin():
+        new_user: User = User(
+            telegram_id=telegram_id,
+            telegram_username = telegram_username,
+            active_role = None,
+            active_github_username = None,
+            full_name = None,
+            banned = False,
+            notifications_enabled = True
+        )
+        session.add(new_user)
 
 async def logout_user(telegram_id: int, session: AsyncSession) -> None:
     """Разлогинить текущий акк из GitHub."""

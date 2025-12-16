@@ -39,12 +39,7 @@ async def complete_github_link(code: str, state: str, session: AsyncSession) -> 
 
         if state_row is None:
             raise ValueError("Invalid or expired state")
-
         telegram_id = state_row.telegram_id
-
-        await session.execute(
-            delete(OAuthState).where(OAuthState.state == state)
-        )
 
     token_url = "https://github.com/login/oauth/access_token"
     headers = {"Accept": "application/json"}
@@ -89,5 +84,7 @@ async def complete_github_link(code: str, state: str, session: AsyncSession) -> 
             user_telegram_id=telegram_id
         )
         session.add(account)
-
+        await session.execute(
+            delete(OAuthState).where(OAuthState.state == state)
+        )
     return github_user

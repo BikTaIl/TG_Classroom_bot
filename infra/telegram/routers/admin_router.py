@@ -111,7 +111,7 @@ async def process_unban_user_second(message: Message, state: FSMContext):
 @admin_router.callback_query(F.data == "get_last_successful_github_call_time")
 async def process_get_last_successful_github_call_time(cb: CallbackQuery, state: FSMContext):
     async with AsyncSessionLocal() as session:
-        answer = await get_last_successful_github_call_time(cb.message.from_user.id, session)
+        answer = await get_last_successful_github_call_time(cb.from_user.id, session)
     if answer:
         await cb.message.answer(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
     else:
@@ -122,7 +122,7 @@ async def process_get_last_successful_github_call_time(cb: CallbackQuery, state:
 @admin_router.callback_query(F.data == "get_last_failed_github_call_info")
 async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSMContext):
     async with AsyncSessionLocal() as session:
-        answer = await get_last_failed_github_call_info(cb.message.from_user.id, session)
+        answer = await get_last_failed_github_call_info(cb.from_user.id, session)
     if answer:
         await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
     else:

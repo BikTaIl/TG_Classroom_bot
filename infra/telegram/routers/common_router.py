@@ -17,6 +17,8 @@ common_router = Router()
 @common_router.message(Command("start"))
 async def start_panel(message: Message):
     """Отображение клавиатуры"""
+    async with AsyncSessionLocal() as session:
+        await create_user(message.from_user.id, message.from_user.username, session)
     await message.answer("Основная панель:", reply_markup=get_start_menu())
 
 
@@ -29,7 +31,7 @@ async def start_panel(cb: CallbackQuery):
 async def process_login_link_github(cb: CallbackQuery, state: FSMContext):
     """Вернуть URL для привязки GitHub-аккаунта к пользователю Telegram."""
     async with AsyncSessionLocal() as session:
-        answer = await login_link_github(cb.message.from_user.id, session)
+        answer = await login_link_github(cb.from_user.id, session)
         await cb.message.answer(f"Запрашиваемый URL: {answer}", reply_markup=return_to_the_start())
     await cb.answer()
 
@@ -37,7 +39,7 @@ async def process_login_link_github(cb: CallbackQuery, state: FSMContext):
 async def process_logout_user(cb: CallbackQuery, state: FSMContext):
     """Разлогинить текущий акк из GitHub."""
     async with AsyncSessionLocal() as session:
-        await login_link_github(cb.message.from_user.id, session)
+        await login_link_github(cb.from_user.id, session)
         await cb.message.answer(f"Аккаунт разлогинен.", reply_markup=return_to_the_start())
     await cb.answer()
 
@@ -54,7 +56,7 @@ async def process_set_active_role_student(cb: CallbackQuery, state: FSMContext):
     role = "student"
     try:
         async with AsyncSessionLocal() as session:
-            await set_active_role(cb.message.from_user.id, role, session)
+            await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=return_to_the_start())
     except:
         await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
@@ -65,7 +67,7 @@ async def process_set_active_role_teacher(cb: CallbackQuery, state: FSMContext):
     role = "teacher"
     try:
         async with AsyncSessionLocal() as session:
-            await set_active_role(cb.message.from_user.id, role, session)
+            await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_teacher())
     except:
         await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
@@ -76,7 +78,7 @@ async def process_set_active_role_admin(cb: CallbackQuery, state: FSMContext):
     role = "admin"
     try:
         async with AsyncSessionLocal() as session:
-            await set_active_role(cb.message.from_user.id, role, session)
+            await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_admin())
     except:
         await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
@@ -87,7 +89,7 @@ async def process_set_active_role_assistant(cb: CallbackQuery, state: FSMContext
     role = "assistant"
     try:
         async with AsyncSessionLocal() as session:
-            await set_active_role(cb.message.from_user.id, role, session)
+            await set_active_role(cb.from_user.id, role, session)
         await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_assistant())
     except:
         await cb.message.answer(f"Не получилось установить роль {role}, возможно, название роли введено неправильно или нет прав доступа.", reply_markup=return_to_the_start())
@@ -98,7 +100,7 @@ async def process_set_active_role_assistant(cb: CallbackQuery, state: FSMContext
 async def process_toggle_global_notifications(cb: CallbackQuery, state: FSMContext):
     """Глобально сменить рычажок уведомлений по дд для пользователя."""
     async with AsyncSessionLocal() as session:
-        await toggle_global_notifications(cb.message.from_user.id, session)
+        await toggle_global_notifications(cb.from_user.id, session)
         await cb.message.answer("Рычаг уведомлений переключен.", reply_markup=return_to_the_start())
     await cb.answer()
 

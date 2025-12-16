@@ -45,7 +45,7 @@ async def process_set_student_active_course_second(message: Message, state: FSMC
 @student_router.callback_query(F.data == "get_student_notification_rules")
 async def process_get_student_notification_rules(cb: CallbackQuery, state: FSMContext):
     async with AsyncSessionLocal() as session:
-        rules = await get_student_notification_rules(cb.message.from_user.id, session)
+        rules = await get_student_notification_rules(cb.from_user.id, session)
     answer = ""
     for i in len(rules):
         answer += f"Дедлайн {i + 1} наступает за {rules[i]} часов до сдачи \n"
@@ -107,7 +107,7 @@ async def process_remove_student_notification_rule_second(message: Message, stat
 @student_router.callback_query(F.data == "reset_student_notification_rules_to_default")
 async def process_reset_student_notification_rules_to_default(cb: CallbackQuery, state: FSMContext):
     async with AsyncSessionLocal() as session:
-        await reset_student_notification_rules_to_default(cb.message.from_user.id, session)
+        await reset_student_notification_rules_to_default(cb.from_user.id, session)
     await cb.message.answer("Настройки уведомлений успешно сброшены!", reply_markup=return_to_the_menu())
     await cb.answer()
 
@@ -117,7 +117,7 @@ async def process_get_student_active_assignments_summary(cb: CallbackQuery, stat
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        result = await table_to_text(await get_student_active_assignments_summary(cb.message.from_user.id, session, course_id))
+        result = await table_to_text(await get_student_active_assignments_summary(cb.from_user.id, session, course_id))
     await cb.message.answer(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     await cb.answer()
 
@@ -128,7 +128,7 @@ async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, sta
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        result = await get_student_overdue_assignments_summary(cb.message.from_user.id, session, course_id)
+        result = await get_student_overdue_assignments_summary(cb.from_user.id, session, course_id)
     await cb.message.answer(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     await cb.answer()
 
@@ -138,7 +138,7 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        result = await get_student_grades_summary(cb.message.from_user.id, session, course_id)
+        result = await get_student_grades_summary(cb.from_user.id, session, course_id)
     await cb.message.answer(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     await cb.answer()
 
@@ -148,7 +148,7 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     async with AsyncSessionLocal() as session:
-        result = await get_student_grades_summary(cb.message.from_user.id, session, assignment_id)
+        result = await get_student_grades_summary(cb.from_user.id, session, assignment_id)
     await cb.message.answer(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     await cb.answer()
 
@@ -175,7 +175,7 @@ async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMC
     message_send = all_data.get("message")
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        await submit_course_feedback(cb.message.from_user.id, course_id, message_send, True, session)
+        await submit_course_feedback(cb.from_user.id, course_id, message_send, True, session)
     await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
     await cb.anwer()
 
@@ -185,6 +185,6 @@ async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMC
     message_send = all_data.get("message")
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal() as session:
-        await submit_course_feedback(cb.message.from_user.id, course_id, message_send, False, session)
+        await submit_course_feedback(cb.from_user.id, course_id, message_send, False, session)
     await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
     await cb.anwer()
