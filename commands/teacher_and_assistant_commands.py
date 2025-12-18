@@ -4,9 +4,9 @@ from sqlalchemy import select, update, delete, and_, or_, func, case, distinct, 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from decimal import Decimal
-
+from sync import sync_function
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
-    ErrorLog, AccessDenied
+    ErrorLog, AccessDenied, GitOrganization
 
 
 async def _get_user_by_username(username: str, session: AsyncSession) -> Optional[User]:
@@ -18,20 +18,28 @@ async def _get_user_by_username(username: str, session: AsyncSession) -> Optiona
 
 async def _check_permission(telegram_id: int, key_roles: list[str], course_id: int, session: AsyncSession) -> None:
     """Проверить, имеет ли пользователь активную роль"""
-    query = select(User.active_role, User.banned).where(User.telegram_id == telegram_id)
-    role = await session.execute(query)
-    if role.all()[0] not in key_roles or role.all()[1] is True:
-        raise AccessDenied("Недостаточно прав.")
-    if role.first() == 'teacher' and 'teacher' in key_roles:
-        teacher_query = select().where(Course.classroom_id == course_id & Course.teacher_telegram_id == telegram_id)
+    user = await session.get(User, telegram_id)
+    if user.banned:
+        raise AccessDenied(f"Пользователь {telegram_id} забанен.")
+    role = user.active_role
+    if role not in key_roles:
+        raise AccessDenied(f"Роль недоступна.")
+    if role == 'teacher' and 'teacher' in key_roles:
+        teacher_query = select().where(
+            (GitOrganization.course==course_id) &
+            (GitOrganization.teacher_telegram_id == telegram_id))
         teacher = await session.execute(teacher_query)
         if not teacher:
             raise ValueError(f"Недостаточно прав.")
-    if role.first() == 'assistant' and 'assistant' in key_roles:
+    elif role == 'assistant' and 'assistant' in key_roles:
         assistant_query = select().where(Assistant.course_id == course_id & Assistant.telegram_id == telegram_id)
         assistant = await session.execute(assistant_query)
         if not assistant:
             raise ValueError("Недостаточно прав.")
+    elif role == 'admin':
+        return
+    else:
+        raise ValueError("Передана некорректная роль.")
 
 
 async def set_teacher_active_course(telegram_id: int, course_id: Optional[int], session: AsyncSession) -> None:
@@ -593,9 +601,14 @@ async def create_course_announcement(
         course_id: int,
         text: str,
         session: AsyncSession = None
-) -> None:
+) -> Sequence[int]:
     """Создать объявление для курса. Только для учителя"""
-    pass  # жду указания к реализации
+    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
+    assignment_stmt = select(Assignment.classroom_id).where(Assignment.course == course_id)
+    assignment_result = await session.execute(assignment_stmt)
+    query = select(Submission.student_telegram_id).where(Submission.assignment_id.in_(assignment_result.scalars().all()))
+    submission_result = await session.execute(query)
+    return submission_result.scalars().all()
 
 
 async def trigger_manual_sync_for_teacher(
@@ -605,3 +618,15 @@ async def trigger_manual_sync_for_teacher(
         github: Any = None
 ) -> bool:
     """Выполнить ручную синхронизацию данных по курсу. Только для учителя"""
+    user = await session.get(User, teacher_telegram_id)
+    if not user:
+        raise ValueError(f"Пользователя {teacher_telegram_id} не существует.")
+    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
+    if not user.sync_count or user.sync_count < 0:
+        raise ValueError(f"У {teacher_telegram_id} некорректное поле sync_count.")
+    if user.sync_count > 3:
+        await _check_permission(teacher_telegram_id, ['admin'], course_id, session)
+    await sync_function(session)
+    user.sync_count += 1
+    await session.commit()
+    return True
