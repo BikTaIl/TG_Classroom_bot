@@ -26,7 +26,7 @@ async def _check_permission(telegram_id: int, key_roles: list[str], course_id: i
         raise AccessDenied(f"Роль недоступна.")
     if role == 'teacher' and 'teacher' in key_roles:
         teacher_query = select().where(
-            (GitOrganization.course==course_id) &
+            (GitOrganization.course == course_id) &
             (GitOrganization.teacher_telegram_id == telegram_id))
         teacher = await session.execute(teacher_query)
         if not teacher:
@@ -602,11 +602,12 @@ async def create_course_announcement(
         text: str,
         session: AsyncSession = None
 ) -> Sequence[int]:
-    """Создать объявление для курса. Только для учителя"""
+    """Возвращает список студентов, которым надо разослать объявления"""
     await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
     assignment_stmt = select(Assignment.classroom_id).where(Assignment.course == course_id)
     assignment_result = await session.execute(assignment_stmt)
-    query = select(Submission.student_telegram_id).where(Submission.assignment_id.in_(assignment_result.scalars().all()))
+    query = select(Submission.student_telegram_id).where(
+        Submission.assignment_id.in_(assignment_result.scalars().all()))
     submission_result = await session.execute(query)
     return submission_result.scalars().all()
 
@@ -630,3 +631,19 @@ async def trigger_manual_sync_for_teacher(
     user.sync_count += 1
     await session.commit()
     return True
+
+
+async def add_organisation(teacher_telegram_id: int, course_id: int, name: str, session: AsyncSession = None) -> None:
+    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
+    existing = await session.execute(select().where(GitOrganization.organization_name == name))
+    if existing:
+        raise ValueError("Организация уже существует.")
+    new_organization = GitOrganization(
+        organization_name=name,
+        teacher_telegram_id=teacher_telegram_id
+    )
+    session.add(new_organization)
+    await session.commit()
+    course = await session.get(Course, course_id)
+    course.organization_name = new_organization
+    await session.commit()
