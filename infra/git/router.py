@@ -30,16 +30,13 @@ async def log_requests(request: Request, call_next):
             async with AsyncSessionLocal() as session:
                 session.add(
                     GitLogs(
-                        ip=client_ip,
-                        method=request.method,
-                        path=request.url.path,
-                        status_code=status_code,
-                        process_time=process_time,
+                        log_status=status_code,
+                        log_message=f"client_ip: {client_ip}, {request.method} {request.url.path} ({process_time:.3f}s)",
                     )
                 )
                 await session.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            print("LOGGING FAILED:", e)
 
 
 @app.get("/oauth/github/callback")
