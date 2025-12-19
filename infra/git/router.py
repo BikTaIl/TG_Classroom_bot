@@ -4,8 +4,43 @@ from infra.git.github_service import complete_github_link
 from uvicorn import Config, Server
 import asyncio
 from infra.db import AsyncSessionLocal
+import time
+from models.db import GitLogs
 
 app = FastAPI()
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    status_code = 500
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+
+    except Exception as exc:
+        raise
+
+    finally:
+        process_time = time.time() - start_time
+        client_ip = request.client.host if request.client else None
+
+        try:
+            async with AsyncSessionLocal() as session:
+                session.add(
+                    GitLogs(
+                        ip=client_ip,
+                        method=request.method,
+                        path=request.url.path,
+                        status_code=status_code,
+                        process_time=process_time,
+                    )
+                )
+                await session.commit()
+        except Exception:
+            pass
+
 
 @app.get("/oauth/github/callback")
 async def github_callback(request: Request):
