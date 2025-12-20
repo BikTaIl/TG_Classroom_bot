@@ -229,3 +229,19 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state
     else:
         await cb.message.answer("Сессия была обновлена уже 3 раза за сутки. Нет доступа.")
     await cb.answer()
+
+@teacher_router.callback_query(F.data == "add_organisation_teacher")
+async def add_organisation_teacher_first(cb: CallbackQuery, state:FSMContext):
+    await state.set_state(AddOrganisation.waiting_name)
+    await cb.message.answer(
+        "Введите название вашей организации."
+    )
+    await cb.answer()
+
+@teacher_router.message(AddOrganisation.waiting_name)
+async def add_organisation_teacher_second(message: Message, state: FSMContext):
+    name = message.text
+    all_data = await state.get_data()
+    course_id = all_data.get("course_id")
+    async with AsyncSessionLocal as session:
+        await add_organisation(message.from_user.id, course_id, name)

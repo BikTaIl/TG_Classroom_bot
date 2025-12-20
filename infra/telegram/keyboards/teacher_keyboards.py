@@ -17,6 +17,8 @@ def get_teacher_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Удалить ассистента", callback_data="remove_course_assistant_teacher")],
         [InlineKeyboardButton(text="Создать уведомление для курса", callback_data="create_course_announcement_teacher")],
         [InlineKeyboardButton(text="Выполнить ручную синхронизацию курса", callback_data="trigger_manual_sync_for_teacher_teacher")],
+        [InlineKeyboardButton(text="Добавить организацию",
+                              callback_data="add_organisation_tecaher")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
