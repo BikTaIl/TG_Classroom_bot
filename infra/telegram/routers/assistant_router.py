@@ -37,8 +37,10 @@ async def process_set_teacher_active_course_assistant_second(message: Message, s
             else:
                 await state.update_data(course_id=course_id)
                 await message.answer("Курс установлен", reply_markup=return_to_the_menu())
-    except AccessDenied:
-        await message.answer("Нет доступа к данному курсу.", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 
 @assistant_router.callback_query(F.data == "set_teacher_active_assignment_assistant")
@@ -62,8 +64,10 @@ async def process_set_teacher_active_assignment_assistant_second(message: Messag
             else:
                 await state.update_data(assignment_id=assignment_id)
                 await message.answer("Задание установлено", reply_markup=return_to_the_menu())
-    except AccessDenied:
-        await message.answer("Нет доступа к данному заданию.", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 
 @assistant_router.callback_query(F.data == "get_course_students_overview_assistant")
@@ -71,20 +75,32 @@ async def process_get_course_students_overview_assistant(cb: CallbackQuery, stat
     """Запуск по кнопке функции get_course_students_overview_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_course_students_overview(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_course_students_overview(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 @assistant_router.callback_query(F.data == "get_assignment_students_status_assistant")
 async def process_get_assignment_students_status_assistant(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_assignment_students_status_assistant"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_classroom_users_without_bot_accounts_assistant")
@@ -92,13 +108,19 @@ async def process_get_classroom_users_without_bot_accounts_assistant(cb: Callbac
     """Запуск по кнопке функции get_classroom_users_without_bot_accounts_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
-    result = ""
-    for username in overview:
-        result += username + "\n"
-    await cb.message.answer(result, reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
+        result = ""
+        for username in overview:
+            result += username + "\n"
+        await cb.message.answer(result, reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_course_deadlines_overview_assistant")
@@ -106,10 +128,16 @@ async def process_get_course_deadlines_overview_assistant(cb: CallbackQuery, sta
     """Запуск по кнопке функции get_course_deadlines_overview_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_tasks_to_grade_summary_assistant")
@@ -117,10 +145,16 @@ async def process_get_tasks_to_grade_summary_assistant(cb: CallbackQuery, state:
     """Запуск по кнопке функции get_tasks_to_grade_summary_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_manual_check_submissions_summary_assistant")
@@ -128,10 +162,16 @@ async def process_get_manual_check_submissions_summary_assistant(cb: CallbackQue
     """Запуск по кнопке функции get_manual_check_submissions_summary_assistant"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @assistant_router.callback_query(F.data == "get_teacher_deadline_notification_payload_assistant")
@@ -139,10 +179,16 @@ async def process_get_teacher_deadline_notification_payload_assistant(cb: Callba
     """Запуск по кнопке функции get_teacher_deadline_notification_payload_assistant"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-    if overview:
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    else:
-        await cb.message.answer("Данных нет")
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+        if overview:
+            await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.answer("Данных нет")
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()

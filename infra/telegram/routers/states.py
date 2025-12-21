@@ -39,6 +39,9 @@ class ChangeCourseTeacher(StatesGroup):
 class ChangeCourseAssistant(StatesGroup):
     waiting_course_id = State()
 
+class ChangeCourse(StatesGroup):
+    waiting_course_id = State()
+
 class ChangeAssignmentTeacher(StatesGroup):
     waiting_course_id = State()
 
@@ -59,3 +62,6 @@ class EnterName(StatesGroup):
 
 class AddOrganisation(StatesGroup):
     waiting_name = State()
+
+class AddAnnouncement(StatesGroup):
+    waiting_text = State()

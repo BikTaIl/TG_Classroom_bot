@@ -1,4 +1,4 @@
-from pyexpat.errors import messages
+from infra.telegram.app import bot
 
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -38,9 +38,10 @@ async def process_set_teacher_active_course_teacher_second(message: Message, sta
         else:
             await state.update_data(course_id=course_id)
             await message.answer("Курс установлен", reply_markup=return_to_the_menu())
-    except AccessDenied:
-        await message.answer("ID курса написан неправильно или к нему нет доступа", reply_markup=return_to_the_menu())
-
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 @teacher_router.callback_query(F.data == "set_teacher_active_assignment_teacher")
 async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery, state: FSMContext):
@@ -62,8 +63,10 @@ async def process_set_teacher_active_assignment_teacher_second(message: Message,
         else:
             await state.update_data(assignment_id=assignment_id)
             await message.answer("Задание установлено", reply_markup=return_to_the_menu())
-    except AccessDenied:
-        await message.answer("ID задания написан неправильно или к нему нет доступа", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 
 @teacher_router.callback_query(F.data == "get_course_students_overview_teacher")
@@ -87,10 +90,16 @@ async def process_get_assignment_students_status_teacher(cb: CallbackQuery, stat
     """Запуск по кнопке функции get_assignment_students_status_teacher"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @teacher_router.callback_query(F.data == "get_classroom_users_without_bot_accounts_teacher")
@@ -98,13 +107,19 @@ async def process_get_classroom_users_without_bot_accounts_teacher(cb: CallbackQ
     """Запуск по кнопке функции get_classroom_users_without_bot_accounts_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
-    result = ""
-    for username in overview:
-        result += username + "\n"
-    await cb.message.answer(result, reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
+        result = ""
+        for username in overview:
+            result += username + "\n"
+        await cb.message.answer(result, reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @teacher_router.callback_query(F.data == "get_course_deadlines_overview_teacher")
@@ -112,10 +127,16 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state
     """Запуск по кнопке функции get_course_deadlines_overview_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @teacher_router.callback_query(F.data == "get_tasks_to_grade_summary_teacher")
@@ -123,10 +144,16 @@ async def process_get_tasks_to_grade_summary_teacher(cb: CallbackQuery, state: F
     """Запуск по кнопке функции get_tasks_to_grade_summary_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @teacher_router.callback_query(F.data == "get_manual_check_submissions_summary_teacher")
@@ -134,10 +161,16 @@ async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery
     """Запуск по кнопке функции get_manual_check_submissions_summary_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 
 @teacher_router.callback_query(F.data == "get_teacher_deadline_notification_payload_teacher")
@@ -145,13 +178,19 @@ async def process_get_teacher_deadline_notification_payload_teacher(cb: Callback
     """Запуск по кнопке функции get_teacher_deadline_notification_payload_teacher"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-    if overview:
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    else:
-        await cb.message.answer("Данных нет", reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+        if overview:
+            await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.answer("Данных нет", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 @teacher_router.callback_query(F.data == "add_course_assistant_teacher")
 async def process_add_course_assistant_teacher_first(cb: CallbackQuery, state: FSMContext):
@@ -172,8 +211,10 @@ async def process_add_course_assistant_teacher_second(message: Message, state: F
         async with AsyncSessionLocal() as session:
             await add_course_assistant(message.from_user.id, course_id, username, session)
         await message.answer("Ассистент успешно добавлен!", reply_markup=return_to_the_menu())
-    except:
-        await message.answer("Не получилось добавить ассистента на курс. Возможно, вы некорректно ввели его ник.", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 
 @teacher_router.callback_query(F.data == "remove_course_assistant_teacher")
@@ -195,20 +236,22 @@ async def process_remove_course_assistant_teacher_second(message: Message, state
         async with AsyncSessionLocal() as session:
             await remove_course_assistant(message.from_user.id, course_id, username, session)
         await message.answer("Ассистент успешно удален!", reply_markup=return_to_the_menu())
-    except:
-        await message.answer("Не получилось удалить ассистента с курса. Возможно, вы некорректно ввели его ник.", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 
 @teacher_router.callback_query(F.data == "create_course_announcement_teacher")
 async def process_create_course_announcement_teacher_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции create_course_announcement_teacher"""
-    await state.set_state(AddAssistant.waiting_username)
+    await state.set_state(AddAnnouncement.waiting_text)
     await cb.message.answer(
         "Введите ник ассистента в виде @username или username:"
     )
     await cb.answer()
 
-@teacher_router.message(AddAssistant.waiting_username)
+@teacher_router.message(AddAnnouncement.waiting_text)
 async def process_create_course_announcement_teacher_second(message: Message, state: FSMContext):
     """Ввод имени для функции create_course_announcement_teacher"""
     text = message.text
@@ -216,20 +259,30 @@ async def process_create_course_announcement_teacher_second(message: Message, st
     course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            await create_course_announcement(message.from_user.id, course_id, text, session)
+            students_id = await create_course_announcement(message.from_user.id, course_id, text, session)
+        for student_id in students_id:
+            bot.send_message(student_id, text)
         await message.answer("Уведомление успешно создано!", reply_markup=return_to_the_menu())
-    except:
-        await message.answer("Не получилось создать уведомление.", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 @teacher_router.callback_query(F.data == "trigger_manual_sync_for_teacher_teacher")
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции trigger_manual_sync_for_teacher_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        done = await trigger_manual_sync_for_teacher(cb.from_user.id, course_id, session)
-    if done:
-        await cb.message.answer("Сессия синхронизирована")
-    else:
-        await cb.message.answer("Сессия была обновлена уже 3 раза за сутки. Нет доступа.")
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            done = await trigger_manual_sync_for_teacher(cb.from_user.id, course_id, session)
+        if done:
+            await cb.message.answer("Сессия синхронизирована")
+        else:
+            await cb.message.answer("Сессия была обновлена уже 3 раза за сутки. Нет доступа.")
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
