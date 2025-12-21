@@ -32,19 +32,21 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
 
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:
     """Установить активную роль пользователя: 'student', 'teacher', 'assistant', 'admin'. С проверкой на доступность роли"""
-    user = session.get(User, telegram_id)
-    if not user:
-        raise ValueError(f"Пользователя {telegram_id} не существует.")
-    if role not in ['student', 'teacher', 'assistant', 'admin']:
-        raise ValueError("Такой роли не существует.")
-    permission_query = select().where(
-        (Permission.telegram_id == telegram_id) &
-        (Permission.permitted_role == role)
-    )
-    permission = await session.execute(permission_query)
-    if not permission:
-        raise AccessDenied("У вас нет доступа к этой роли.")
-    user.active_role = role
+    async with session.begin():
+        user = await session.get(User, telegram_id)
+        if not user:
+            raise ValueError(f"Пользователя {telegram_id} не существует.")
+        if role not in ['student', 'teacher', 'assistant', 'admin']:
+            raise ValueError("Такой роли не существует.")
+        permission_query = select(Permission).where(
+            (Permission.telegram_id == telegram_id) &
+            (Permission.permitted_role == role)
+        )
+        result = await session.execute(permission_query)
+        permission = result.scalar_one_or_none()
+        if not permission:
+            raise AccessDenied("У вас нет доступа к этой роли.")
+        user.active_role = role
 
 
 

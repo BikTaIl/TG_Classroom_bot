@@ -4,10 +4,10 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 def get_start_menu() -> InlineKeyboardMarkup:
     """Основная клавиатура стартового меню"""
     buttons = [
-        [InlineKeyboardButton(text="Вернуть URL для привязки GitHub", callback_data="login_link_github")],
+        [InlineKeyboardButton(text="Привязать GitHub", callback_data="login_link_github")],
         [InlineKeyboardButton(text="Разлогинить текущий аккаунт из GitHub", callback_data="logout_user")],
         [InlineKeyboardButton(text="Выбрать активную роль", callback_data="set_active_role")],
-        [InlineKeyboardButton(text="Глобально сменить рычажок уведомлений по дд для пользователя", callback_data="toggle_global_notifications")],
+        [InlineKeyboardButton(text="Сменить рычаг уведомлений", callback_data="toggle_global_notifications")],
         [InlineKeyboardButton(text="Сменить гитхаб-аккаунт на другой залогиненный", callback_data="change_git_account")],
         [InlineKeyboardButton(text="Ввести/изменить ФИО", callback_data="enter_name")]
     ]
