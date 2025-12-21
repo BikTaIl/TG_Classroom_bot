@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import text, func, delete
+from sqlalchemy import text, func, delete, update
 from models.gh_client import GitHubClassroomClient
 from models.db import Submission, GithubAccount, Assignment, Course, User, Notification, OAuthState
 from typing import Optional
@@ -14,9 +14,9 @@ async def sync_function(session: AsyncSession) -> None:
     :param session: AsyncSession
     :returns None"""
     courses = await gh.get_courses()
-    all_courses: list[Course] = []
-    all_assignments: list[Assignment] = []
-    all_submissions: list[Submission] = []
+    all_courses: set[Course] = set()
+    all_assignments: set[Assignment] = set()
+    all_submissions: set[Submission] = set()
     try:
         async with session.begin():
             for course in courses:
@@ -29,8 +29,7 @@ async def sync_function(session: AsyncSession) -> None:
                     name=course_name,
                     organization_name=course_organization_name
                 )
-                all_courses.append(new_course)
-                session.add(new_course)
+                all_courses.add(new_course)
                 assignments = await gh.get_assignments(course["id"])
                 for assignment in assignments:
                     assignment_id: int = assignment['id']
@@ -42,8 +41,7 @@ async def sync_function(session: AsyncSession) -> None:
                         title=title,
                         deadline_full=deadline_full
                     )
-                    all_assignments.append(new_assignment)
-                    session.add(new_assignment)
+                    all_assignments.add(new_assignment)
                     submissions = await gh.get_submissions(assignment["id"])
                     for submission in submissions:
                         submission_id: int = submission['id']
@@ -57,7 +55,7 @@ async def sync_function(session: AsyncSession) -> None:
                         is_submitted: bool = submission['submitted']
                         score: Optional[float] = submission['grade']
                         new_submission: Submission = Submission(
-                            submission_id=submission_id,
+                            id=submission_id,
                             assignment_id=assignment_id,
                             student_github_username=github_username,
                             student_telegram_id=student_telegram_id,
@@ -65,16 +63,13 @@ async def sync_function(session: AsyncSession) -> None:
                             is_submitted=is_submitted,
                             score=score
                         )
-                        all_submissions.append(new_submission)
-            await session.execute(delete(Course))
-            await session.execute(delete(Assignment))
+                        all_submissions.add(new_submission)
             await session.execute(delete(Submission))
-            for course in all_courses:
-                session.add(course)
-            for assignment in all_assignments:
-                session.add(assignment)
-            for submission in all_submissions:
-                session.add(submission)
+            await session.execute(delete(Assignment))
+            await session.execute(delete(Course))
+            session.add_all(all_courses)
+            session.add_all(all_assignments)
+            session.add_all(all_submissions)
     except Exception as e:
         raise e
 
@@ -131,3 +126,11 @@ async def delete_overdued_states(session: AsyncSession) -> None:
     async with session.begin():
         query = delete(OAuthState).where(OAuthState.created_at < fifteen_minutes_earlier)
         await session.execute(query)
+
+async def zero_sync_counter(session: AsyncSession) -> None:
+    """Функция обнуляет все счетчики количества синхронизаций в полночь"""
+    now = datetime.now()
+    if now.hour == 0 and 0 <= now.minute <= 20:
+        with session.begin():
+            stmt = update(User).values(sync_count=0)
+            await session.execute(stmt)

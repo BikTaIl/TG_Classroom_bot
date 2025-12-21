@@ -1,7 +1,6 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
-from infra.telegram.app import bot
 
 from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
@@ -243,7 +242,7 @@ async def process_submit_course_feedback_not_anonymus(cb: CallbackQuery, state: 
     try:
         async with AsyncSessionLocal() as session:
             teacher_id = await submit_course_feedback(cb.from_user.id, course_id, message_send, False, session)
-        await bot.send_message(teacher_id, message_send)
+        await cb.bot.send_message(teacher_id, message_send)
         await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())

@@ -12,7 +12,7 @@ from models.db import User, GithubAccount, Notification, Course, Assignment, Ass
 async def _get_students_courses(telegram_id: int, session: AsyncSession) -> Sequence[int]:
     """Все курсы студента из Submitted"""
     query = select(Assignment.classroom_id).distinct().join(
-        Submission, Submission.assignment_id == Assignment.id
+        Submission, Submission.assignment_id == Assignment.github_assignment_id
     ).where(
         Submission.student_telegram_id == telegram_id
     )
@@ -125,7 +125,7 @@ async def get_student_overdue_assignments_summary(
         Assignment, Course.classroom_id == Assignment.classroom_id
     ).join(
         Submission,
-        (Assignment.id == Submission.assignment_id) &
+        (Assignment.github_assignment_id == Submission.assignment_id) &
         (Submission.student_telegram_id == telegram_id)
     ).where(
         and_(
@@ -174,7 +174,7 @@ async def get_student_grades_summary(
     ).join(
         Submission,
         and_(
-            Submission.assignment_id == Assignment.id,
+            Submission.assignment_id == Assignment.github_assignment_id,
             Submission.student_telegram_id == telegram_id,
             Submission.is_submitted is True
         )
@@ -210,7 +210,7 @@ async def get_student_assignment_details(
 ) -> Mapping[str, Any]:
     """Подробности по конкретной задаче: статус, балл, дата сдачи."""
     courses = await _get_students_courses(telegram_id, session)
-    course = await select(Assignment.classroom_id).where(Assignment.id == assignment_id).one_or_none()
+    course = await select(Assignment.classroom_id).where(Assignment.github_assignment_id == assignment_id).one_or_none()
     if course not in courses:
         raise ValueError("Студент не может просматривать данное задание.")
     query = select(
@@ -225,12 +225,12 @@ async def get_student_assignment_details(
     ).join(
         Submission,
         and_(
-            Submission.assignment_id == Assignment.id,
+            Submission.assignment_id == Assignment.github_assignment_id,
             Submission.student_telegram_id == telegram_id
         ),
         isouter=True
     ).where(
-        Assignment.id == assignment_id
+        Assignment.github_assignment_id == assignment_id
     )
 
     result = await session.execute(query)

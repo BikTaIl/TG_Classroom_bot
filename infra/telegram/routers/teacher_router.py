@@ -1,11 +1,10 @@
-from infra.telegram.app import bot
-
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.teacher_keyboards import *
 from .states import *
+from commands.sync import sync_function
 from commands.teacher_and_assistant_commands import *
 from adapters.table_to_text import table_to_text
 
@@ -261,7 +260,7 @@ async def process_create_course_announcement_teacher_second(message: Message, st
         async with AsyncSessionLocal() as session:
             students_id = await create_course_announcement(message.from_user.id, course_id, text, session)
         for student_id in students_id:
-            bot.send_message(student_id, text)
+            message.bot.send_message(student_id, text)
         await message.answer("Уведомление успешно создано!", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
@@ -269,13 +268,13 @@ async def process_create_course_announcement_teacher_second(message: Message, st
         await message.answer(str(err), reply_markup=return_to_the_menu())
 
 @teacher_router.callback_query(F.data == "trigger_manual_sync_for_teacher_teacher")
-async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state: FSMContext):
+async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery):
     """Запуск по кнопке функции trigger_manual_sync_for_teacher_teacher"""
-    all_data = await state.get_data()
-    course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            done = await trigger_manual_sync_for_teacher(cb.from_user.id, course_id, session)
+            done = await trigger_manual_sync_for_teacher(cb.from_user.id, session)
+            async with AsyncSessionLocal() as sync_session:
+                await sync_function(sync_session)
         if done:
             await cb.message.answer("Сессия синхронизирована")
         else:

@@ -53,13 +53,13 @@ async def get_course_students_overview(
     course_students_subq = select(
         distinct(Submission.student_telegram_id)
     ).join(
-        Assignment, Assignment.id == Submission.assignment_id
+        Assignment, Assignment.github_assignment_id == Submission.assignment_id
     ).where(
         Assignment.classroom_id == course_id
     ).subquery()
 
     assignment_ids_result = await session.execute(
-        select(Assignment.id).where(Assignment.classroom_id == course_id)
+        select(Assignment.github_assignment_id).where(Assignment.classroom_id == course_id)
     )
     assignment_ids = assignment_ids_result.scalars().all()
 
@@ -97,7 +97,7 @@ async def get_course_students_overview(
         student_ids = [s['telegram_id'] for s in students_data]
 
         all_assignments_query = select(
-            Assignment.id,
+            Assignment.github_assignment_id,
             Assignment.title
         ).where(Assignment.classroom_id == course_id)
 
@@ -159,7 +159,7 @@ async def get_assignment_students_status(
     """Сводка по отдельному заданию: ФИО, GitHub, статус. Сортировка по статусу и ФИО"""
     if not assignment_id:
         return []
-    course_query = select(Assignment.classroom_id).where(Assignment.id == assignment_id)
+    course_query = select(Assignment.classroom_id).where(Assignment.github_assignment_id == assignment_id)
     course = await session.execute(course_query)
     await _check_permission(telegram_id, ['teacher', 'assistant', 'admin'], course.scalar_one(), session)
 
@@ -170,11 +170,11 @@ async def get_assignment_students_status(
         Submission.is_submitted.label('is_submitted'),
         Submission.score.label('score'),
     ).join(
-        Submission, Submission.assignment_id == Assignment.id
+        Submission, Submission.assignment_id == Assignment.github_assignment_id
     ).join(
         User, User.telegram_id == Submission.student_telegram_id
     ).where(
-        Assignment.id == assignment_id
+        Assignment.github_assignment_id == assignment_id
     ).order_by(User.full_name).order_by(Submission.is_submitted)
     result = await session.execute(ass_query)
     result_data = result.mappings().all()
@@ -205,7 +205,7 @@ async def get_classroom_users_without_bot_accounts(
     query = select(
         distinct(Submission.student_github_username)
     ).select_from(Submission).join(
-        Assignment, Assignment.id == Submission.assignment_id
+        Assignment, Assignment.github_assignment_id == Submission.assignment_id
     ).where(
         and_(
             Assignment.classroom_id == course_id,
@@ -229,7 +229,7 @@ async def get_course_deadlines_overview(
 ) -> Sequence[Mapping[str, Any]]:
     """Сводка всех дедлайнов. Сортировка по дд"""
     query = select(
-        Assignment.id,
+        Assignment.github_assignment_id,
         Assignment.title,
         Assignment.deadline_full,
         Course.name.label("course_name"),
@@ -251,7 +251,7 @@ async def get_course_deadlines_overview(
             Assistant.telegram_id == telegram_id
         )
     ).group_by(
-        Assignment.id,
+        Assignment.github_assignment_id,
         Assignment.title,
         Assignment.deadline_full,
         Course.name,
@@ -284,7 +284,7 @@ async def get_course_deadlines_overview(
 
     overview = []
     for assignment in assignments:
-        submitted_count = submissions_map.get(assignment.id, 0)
+        submitted_count = submissions_map.get(Assignment.github_assignment_id, 0)
         total_students = assignment.total_students or 0
 
         overview.append({
@@ -315,7 +315,7 @@ async def get_tasks_to_grade_summary(
     ).join(
         Course, Assignment.classroom_id == Course.classroom_id
     ).join(
-        Submission, Submission.assignment_id == Assignment.id
+        Submission, Submission.assignment_id == Assignment.github_assignment_id
     ).where(
         and_(
             Assignment.deadline_full < datetime.now(),
@@ -371,7 +371,7 @@ async def get_manual_check_submissions_summary(
     ).join(
         Submission, Submission.student_telegram_id == User.telegram_id
     ).join(
-        Assignment, Submission.assignment_id == Assignment.id
+        Assignment, Submission.assignment_id == Assignment.github_assignment_id
     ).join(
         Course, Assignment.classroom_id == Course.classroom_id
     ).where(
@@ -423,7 +423,7 @@ async def get_teacher_deadline_notification_payload(
     ).join(
         Course, Assignment.classroom_id == Course.classroom_id
     ).where(
-        Assignment.id == assignment_id
+        Assignment.github_assignment_id == assignment_id
     )
 
     result = await session.execute(assignment_query)
@@ -438,7 +438,7 @@ async def get_teacher_deadline_notification_payload(
     students_in_course_query = select(
         distinct(Submission.student_telegram_id)
     ).join(
-        Assignment, Submission.assignment_id == Assignment.id
+        Assignment, Submission.assignment_id == Assignment.github_assignment_id
     ).where(
         Assignment.classroom_id == course.classroom_id
     )
@@ -603,7 +603,6 @@ async def create_course_announcement(
 
 
 async def trigger_manual_sync_for_teacher(
-        course_id: int,
         teacher_telegram_id: int,
         session: AsyncSession = None
 ) -> bool:
@@ -611,12 +610,52 @@ async def trigger_manual_sync_for_teacher(
     user = await session.get(User, teacher_telegram_id)
     if not user:
         raise ValueError(f"Пользователя {teacher_telegram_id} не существует.")
-    await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
-    if not user.sync_count or user.sync_count < 0:
+    if user.sync_count is None or user.sync_count < 0:
+        print(user.sync_count)
         raise ValueError(f"У {teacher_telegram_id} некорректное поле sync_count.")
-    if user.sync_count > 3:
-        await _check_permission(teacher_telegram_id, ['admin'], course_id, session)
-    await sync_function(session)
+    if user.sync_count >= 3:
+        try:
+            await _check_permission(teacher_telegram_id, ['admin'], 0, session)
+        except AccessDenied:
+            raise ValueError(f"Вы сделали больше 3 обновлений")
     user.sync_count += 1
     await session.commit()
     return True
+
+
+async def find_course(
+        teacher_telegram_id: int,
+        course_name: str,
+        session: AsyncSession
+) -> int:
+    """Находит айди курса по айди учителя и названию курса"""
+    org_query = await session.execute(
+        select(GitOrganization.name).where(GitOrganization.teacher_telegram_id == teacher_telegram_id))
+    organization = org_query.scalar_one_or_none()
+    if organization is None:
+        raise ValueError('Учитель не привязан к организации')
+    course_query = await session.execute(select(Course.classroom_id).where(
+        Course.organization_name == organization,
+        Course.name == course_name
+    ))
+    course = course_query.scalar_one_or_none()
+    if course is None:
+        raise ValueError('Курса с таким названием нет')
+    return course
+
+
+async def find_assignment(
+        course_id: str,
+        assignment_name: str,
+        session: AsyncSession
+) -> int:
+    """Находит айди задания по айди курса и названию задания"""
+    assignment_query = await session.execute(
+        select(Assignment.github_assignment_id).where(
+            Assignment.classroom_id == course_id,
+            Assignment.title == assignment_name
+        ))
+    assignment_id = assignment_query.scalar_one_or_none()
+    if assignment_id is None:
+        raise ValueError('Задания с таким именем в данном курсе нет')
+    return assignment_id
