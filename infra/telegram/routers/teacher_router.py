@@ -35,7 +35,7 @@ async def process_set_teacher_active_course_teacher_second(message: Message, sta
             await state.update_data(course_id=None)
             await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
         else:
-            await state.update_data(course_id=course_id)
+            await state.update_data(course_id=int(course_id))
             await message.answer("Курс установлен", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
@@ -60,7 +60,7 @@ async def process_set_teacher_active_assignment_teacher_second(message: Message,
             await state.update_data(assignment_id=None)
             await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
         else:
-            await state.update_data(assignment_id=assignment_id)
+            await state.update_data(assignment_id=int(assignment_id))
             await message.answer("Задание установлено", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
@@ -76,6 +76,7 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
     try:
         async with AsyncSessionLocal() as session:
             overview = await get_course_students_overview(cb.from_user.id, course_id, session)
+            print(overview)
         await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())

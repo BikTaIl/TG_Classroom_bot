@@ -25,14 +25,15 @@ async def _check_permission(telegram_id: int, key_roles: list[str], course_id: i
     if role not in key_roles:
         raise AccessDenied(f"Роль недоступна.")
     if role == 'teacher' and 'teacher' in key_roles:
-        teacher_query = select().where(
-            (GitOrganization.course == course_id) &
+        teacher_query = await session.execute(select(GitOrganization.organization_name).where(
             (GitOrganization.teacher_telegram_id == telegram_id))
-        teacher = await session.execute(teacher_query)
-        if not teacher:
+        )
+        teacher = teacher_query.scalar_one_or_none()
+        course_query = await session.execute(select(Course).where(Course.organization_name == teacher))
+        if teacher is None or course_query is None:
             raise ValueError(f"Недостаточно прав.")
     elif role == 'assistant' and 'assistant' in key_roles:
-        assistant_query = select().where(Assistant.course_id == course_id & Assistant.telegram_id == telegram_id)
+        assistant_query = select(Assistant).where(Assistant.course_id == course_id, Assistant.telegram_id == telegram_id)
         assistant = await session.execute(assistant_query)
         if not assistant:
             raise ValueError("Недостаточно прав.")
