@@ -11,17 +11,23 @@ from models.db import User, GithubAccount, Notification, Course, Assignment, Ass
 async def create_user(telegram_id: int, telegram_username: str, session: AsyncSession) -> None:
     """"Создать профиль юзера при старте"""
     async with session.begin():
-        new_user: User = User(
-            telegram_id=telegram_id,
-            telegram_username = telegram_username,
-            active_role = None,
-            sync_count = 0,
-            active_github_username = None,
-            full_name = None,
-            banned = False,
-            notifications_enabled = True
+        result = await session.execute(
+            select(User).where(User.telegram_id == telegram_id)
         )
-        session.add(new_user)
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            user = User(
+                telegram_id=telegram_id,
+                telegram_username=telegram_username,
+                active_role=None,
+                sync_count=0,
+                active_github_username=None,
+                full_name=None,
+                banned=False,
+                notifications_enabled=True,
+            )
+            session.add(user)
 
 
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:
