@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from decimal import Decimal
 
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
-    ErrorLog, AccessDenied
+    ErrorLog, AccessDenied, GitOrganization
 
 
 async def _get_students_courses(telegram_id: int, session: AsyncSession) -> Sequence[int]:
@@ -259,6 +259,11 @@ async def submit_course_feedback(
         anonymous: bool,
         session: AsyncSession = None
 ) -> int:
-    """Отправить анонимную или неанонимную обратную связь по курсу.
-    :returns Телеграм айди препода данного курса"""
-    pass  # жду деталей реализации
+    """Отправить анонимную или неанонимную обратную связь по курсу."""
+    course_query = select(GitOrganization.teacher_telegram_id).where(
+        (GitOrganization.course == course_id)
+    )
+    course = await session.execute(course_query)
+    if not course.scalar_one():
+        raise ValueError(f"Курса {course_id} не существует.")
+    return course.scalar_one()

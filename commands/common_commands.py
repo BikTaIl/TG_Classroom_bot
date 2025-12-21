@@ -32,7 +32,20 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
 
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:
     """Установить активную роль пользователя: 'student', 'teacher', 'assistant', 'admin'. С проверкой на доступность роли"""
-    pass  # жду деталей реализации
+    user = session.get(User, telegram_id)
+    if not user:
+        raise ValueError(f"Пользователя {telegram_id} не существует.")
+    if role not in ['student', 'teacher', 'assistant', 'admin']:
+        raise ValueError("Такой роли не существует.")
+    permission_query = select().where(
+        (Permission.telegram_id == telegram_id) &
+        (Permission.permitted_role == role)
+    )
+    permission = await session.execute(permission_query)
+    if not permission:
+        raise AccessDenied("У вас нет доступа к этой роли.")
+    user.active_role = role
+
 
 
 async def toggle_global_notifications(telegram_id: int, session: AsyncSession) -> None:
@@ -47,7 +60,17 @@ async def toggle_global_notifications(telegram_id: int, session: AsyncSession) -
 
 async def change_git_account(telegram_id: int, github_login: str, session: AsyncSession) -> None:
     """Сменить гитхаб-аккаунт на другой залогиненный"""
-    pass
+    user = await session.get(User, telegram_id)
+    if not user:
+        raise ValueError(f"Пользователя {telegram_id} не существует.")
+    git_query = select().where(and_(
+        GithubAccount.github_username == github_login,
+        GithubAccount.user_telegram_id == telegram_id
+    ))
+    git = await session.execute(git_query)
+    if not git:
+        raise ValueError(f"Аккаунта {github_login} не существует или у вас нет к нему доступа.")
+    user.active_github_username = github_login
 
 async def enter_name(telegram_id: int, full_name: str, session: AsyncSession) -> None:
     """Добавить в бд полное имя пользователся"""

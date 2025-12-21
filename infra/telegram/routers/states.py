@@ -47,3 +47,6 @@ class SendMessage(StatesGroup):
 
 class EnterName(StatesGroup):
     waiting_name = State()
+
+class AddOrganisation(StatesGroup):
+    waiting_name = State()

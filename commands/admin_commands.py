@@ -17,7 +17,7 @@ async def grant_teacher_role(
         session: AsyncSession = None
 ) -> None:
     """Выдать роль teacher."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
@@ -49,7 +49,7 @@ async def revoke_teacher_role(
         session: AsyncSession = None
 ) -> None:
     """Отобрать роль teacher."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
@@ -71,7 +71,7 @@ async def ban_user(
         session: AsyncSession = None
 ) -> None:
     """Забанить пользователя."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
@@ -90,7 +90,7 @@ async def unban_user(
         session: AsyncSession = None
 ) -> None:
     """Разбанить пользователя."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
@@ -110,7 +110,7 @@ async def get_error_count_for_day(
 ) -> int:
     """Количество ошибок бота за указанный день, либо вся сводка ошибок.
     Сортировка по дате по убыванию."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     if day:
         start_date = datetime.combine(day, datetime.min.time())
@@ -145,7 +145,7 @@ async def get_last_successful_github_call_time(
         session: AsyncSession = None
 ) -> Optional[datetime]:
     """Последнее успешное обращение к GitHub."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     stmt = select(GitLogs).where(
         GitLogs.log_status == SUCCESS_STATUS
@@ -164,7 +164,7 @@ async def get_last_failed_github_call_info(
         session: AsyncSession = None
 ) -> Optional[Mapping[str, Any]]:
     """Информация о последнем ошибочном обращении к GitHub."""
-    await _check_permission(admin_telegram_id, ['admin'], session)
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
     stmt = select(GitLogs).where(
         GitLogs.log_status != SUCCESS_STATUS
