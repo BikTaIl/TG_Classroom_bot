@@ -17,8 +17,6 @@ class GitHubClassroomClient:
             "Authorization": f"bearer {self.token}",
             "Accept": "application/vnd.github.v4+json"
         }
-        self.keys_for_assignments = ['id', 'title', 'submissions', 'deadline', 'classroom']
-        self.keys_for_submissions = ['id', 'submitted', 'grade', ]
 
     async def get_courses(self):
         """
@@ -69,10 +67,7 @@ class GitHubClassroomClient:
             )
             resp.raise_for_status()
             assignments = resp.json()
-        assignments_filtered = []
-        for assignment in assignments:
-            assignments_filtered.append({key: assignment[key] for key in self.keys_for_assignments})
-        return assignments_filtered
+        return assignments
 
     async def get_last_commit_time(self, repo_full_name: str) -> Optional[str]:
         """
@@ -107,6 +102,7 @@ class GitHubClassroomClient:
                                 "submissions": submissions,
                                 "deadline": deadline
                                 "classroom": classroom
+                                "last_commit_at": last commit time
                                 }
         """
         with httpx.Client() as client:
