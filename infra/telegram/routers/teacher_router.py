@@ -19,24 +19,23 @@ async def admin_panel(cb: CallbackQuery):
 @teacher_router.callback_query(F.data == "set_teacher_active_course_teacher")
 async def process_set_teacher_active_course_teacher_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_course_teacher"""
-    await state.set_state(ChangeCourse.waiting_course_id)
+    await state.set_state(ChangeCourseTeacher.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого курса или '-', если хотите сбросить курс"
     )
     await cb.answer()
 
-@teacher_router.message(ChangeCourse.waiting_course_id)
+@teacher_router.message(ChangeCourseTeacher.waiting_course_id)
 async def process_set_teacher_active_course_teacher_second(message: Message, state: FSMContext):
     """Ввод ID курса для функции set_teacher_active_course_teacher"""
     course_id = message.text
     try:
-        async with AsyncSessionLocal() as session:
-            if course_id == '-':
-                await state.update_data(course_id=None)
-                await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
-            else:
-                await state.update_data(course_id=course_id)
-                await message.answer("Курс установлен", reply_markup=return_to_the_menu())
+        if course_id == '-':
+            await state.update_data(course_id=None)
+            await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
+        else:
+            await state.update_data(course_id=course_id)
+            await message.answer("Курс установлен", reply_markup=return_to_the_menu())
     except AccessDenied:
         await message.answer("ID курса написан неправильно или к нему нет доступа", reply_markup=return_to_the_menu())
 
@@ -44,24 +43,23 @@ async def process_set_teacher_active_course_teacher_second(message: Message, sta
 @teacher_router.callback_query(F.data == "set_teacher_active_assignment_teacher")
 async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_assignment_teacher"""
-    await state.set_state(ChangeCourse.waiting_course_id)
+    await state.set_state(ChangeAssignmentTeacher.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого задания или '-', если хотите сбросить его."
     )
     await cb.answer()
 
-@teacher_router.message(ChangeCourse.waiting_course_id)
+@teacher_router.message(ChangeAssignmentTeacher.waiting_course_id)
 async def process_set_teacher_active_assignment_teacher_second(message: Message, state: FSMContext):
     """Ввод ID курса для функции set_teacher_active_assignment_teacher"""
     assignment_id = message.text
     try:
-        async with AsyncSessionLocal() as session:
-            if assignment_id == '-':
-                await state.update_data(assignment_id=None)
-                await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
-            else:
-                await state.update_data(assignment_id=assignment_id)
-                await message.answer("Задание установлено", reply_markup=return_to_the_menu())
+        if assignment_id == '-':
+            await state.update_data(assignment_id=None)
+            await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
+        else:
+            await state.update_data(assignment_id=assignment_id)
+            await message.answer("Задание установлено", reply_markup=return_to_the_menu())
     except AccessDenied:
         await message.answer("ID задания написан неправильно или к нему нет доступа", reply_markup=return_to_the_menu())
 
@@ -71,10 +69,16 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
     """Запуск по кнопке функции get_course_students_overview_teacher"""
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
-    async with AsyncSessionLocal() as session:
-        overview = await get_course_students_overview(cb.from_user.id, course_id, session)
-    await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            overview = await get_course_students_overview(cb.from_user.id, course_id, session)
+        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 @teacher_router.callback_query(F.data == "get_assignment_students_status_teacher")
 async def process_get_assignment_students_status_teacher(cb: CallbackQuery, state: FSMContext):
@@ -227,19 +231,3 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery, state
     else:
         await cb.message.answer("Сессия была обновлена уже 3 раза за сутки. Нет доступа.")
     await cb.answer()
-
-@teacher_router.callback_query(F.data == "add_organisation_teacher")
-async def add_organisation_teacher_first(cb: CallbackQuery, state:FSMContext):
-    await state.set_state(AddOrganisation.waiting_name)
-    await cb.message.answer(
-        "Введите название вашей организации."
-    )
-    await cb.answer()
-
-@teacher_router.message(AddOrganisation.waiting_name)
-async def add_organisation_teacher_second(message: Message, state: FSMContext):
-    name = message.text
-    all_data = await state.get_data()
-    course_id = all_data.get("course_id")
-    async with AsyncSessionLocal as session:
-        await add_organisation(message.from_user.id, course_id, name, session)

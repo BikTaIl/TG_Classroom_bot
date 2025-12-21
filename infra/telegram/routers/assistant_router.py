@@ -19,13 +19,13 @@ async def admin_panel(cb: CallbackQuery):
 @assistant_router.callback_query(F.data == "set_teacher_active_course_assistant")
 async def process_set_teacher_active_course_assistant_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_course_assistant"""
-    await state.set_state(ChangeCourse.waiting_course_id)
+    await state.set_state(ChangeCourseTeacher.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого курса или '-', если хотите сбросить курс"
     )
     await cb.answer()
 
-@assistant_router.message(ChangeCourse.waiting_course_id)
+@assistant_router.message(ChangeCourseTeacher.waiting_course_id)
 async def process_set_teacher_active_course_assistant_second(message: Message, state: FSMContext):
     """Ввод ID курса для функции set_teacher_active_course_assistant"""
     course_id = message.text
@@ -44,13 +44,13 @@ async def process_set_teacher_active_course_assistant_second(message: Message, s
 @assistant_router.callback_query(F.data == "set_teacher_active_assignment_assistant")
 async def process_set_teacher_active_assignment_assistant_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_assignment_assistant"""
-    await state.set_state(ChangeCourse.waiting_course_id)
+    await state.set_state(ChangeAssignmentAssistant.waiting_course_id)
     await cb.message.answer(
         "Введите ID желаемого задания или '-', если хотите сбросить его."
     )
     await cb.answer()
 
-@assistant_router.message(ChangeCourse.waiting_course_id)
+@assistant_router.message(ChangeAssignmentAssistant.waiting_course_id)
 async def process_set_teacher_active_assignment_assistant_second(message: Message, state: FSMContext):
     """Ввод ID курса для функции set_teacher_active_assignment_assistant"""
     assignment_id = message.text
