@@ -65,11 +65,12 @@ async def change_git_account(telegram_id: int, github_login: str, session: Async
     user = await session.get(User, telegram_id)
     if not user:
         raise ValueError(f"Пользователя {telegram_id} не существует.")
-    git_query = select().where(and_(
+    git_query = select(GithubAccount).where(and_(
         GithubAccount.github_username == github_login,
         GithubAccount.user_telegram_id == telegram_id
     ))
-    git = await session.execute(git_query)
+    query = await session.execute(git_query)
+    git = query.scalar_one_or_none()
     if not git:
         raise ValueError(f"Аккаунта {github_login} не существует или у вас нет к нему доступа.")
     user.active_github_username = github_login
