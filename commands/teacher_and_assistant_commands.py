@@ -42,11 +42,6 @@ async def _check_permission(telegram_id: int, key_roles: list[str], course_id: i
         raise ValueError("Передана некорректная роль.")
 
 
-async def set_teacher_active_course(telegram_id: int, course_id: Optional[int], session: AsyncSession) -> None:
-    """Установить/сбросить активный курс пользователя."""
-    pass  # жду деталей реализации
-
-
 async def set_teacher_active_assignment(telegram_id: int, assignment_id: Optional[int], session: AsyncSession) -> None:
     """Установить/сбросить активное задание для пользователя."""
     pass  # жду деталей реализации

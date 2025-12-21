@@ -40,7 +40,7 @@ class GithubAccount(Base):
     __tablename__ = "github_accounts"
 
     github_username = Column(String, primary_key=True)
-    user_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"))
+    user_telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
     created_at = Column(
         TIMESTAMP,
         server_default=text("NOW()")
