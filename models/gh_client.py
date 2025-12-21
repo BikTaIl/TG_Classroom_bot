@@ -74,6 +74,30 @@ class GitHubClassroomClient:
             assignments_filtered.append({key: assignment[key] for key in self.keys_for_assignments})
         return assignments_filtered
 
+    async def get_last_commit_time(self, repo_full_name: str) -> Optional[str]:
+        """
+        Вернуть дату последнего коммита в репозитории
+        :param repo_full_name: owner/repo
+        :return: ISO datetime строки или None
+        """
+        url = f"https://api.github.com/repos/{repo_full_name}/commits"
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                url,
+                headers=self.headers,
+                params={"per_page": 1}
+            )
+            if resp.status_code != 200:
+                return None
+
+            commits = resp.json()
+            if not commits:
+                return None
+
+            return commits[0]["commit"]["author"]["date"]
+
+
     async def get_submissions(self, assignment_id: int):
         """
         Вернуть все сдачи определенного задания
@@ -92,7 +116,20 @@ class GitHubClassroomClient:
             )
             resp.raise_for_status()
             submissions = resp.json()
-        return submissions
+
+        submissions_with_date = []
+
+        for submission in submissions:
+            repo = submission.get("repository")
+            if repo and "full_name" in repo:
+                last_commit_at = await self.get_last_commit_time(repo["full_name"])
+            else:
+                last_commit_at = None
+
+            submission["last_commit_at"] = last_commit_at
+            submissions_with_date.append(submission)
+
+        return submissions_with_date
 
     async def test_connection(self) -> bool:
         try:
