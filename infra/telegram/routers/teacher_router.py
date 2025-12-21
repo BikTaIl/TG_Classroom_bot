@@ -13,7 +13,7 @@ teacher_router = Router()
 async def admin_panel(cb: CallbackQuery):
     """Функция отображения панели учителя.
        Отображается только по кнопке, через команду зайти нельзя."""
-    await cb.message.answer("Панель ассистента:", reply_markup=get_teacher_menu())
+    await cb.message.answer("Панель учителя:", reply_markup=get_teacher_menu())
     await cb.answer()
 
 @teacher_router.callback_query(F.data == "set_teacher_active_course_teacher")
@@ -242,4 +242,4 @@ async def add_organisation_teacher_second(message: Message, state: FSMContext):
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     async with AsyncSessionLocal as session:
-        await add_organisation(message.from_user.id, course_id, name)
+        await add_organisation(message.from_user.id, course_id, name, session)

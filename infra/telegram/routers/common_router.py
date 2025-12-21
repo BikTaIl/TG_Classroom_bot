@@ -59,9 +59,9 @@ async def process_set_active_role_student(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_student())
+        await cb.message.answer(f"Роль 'студент' установлена.", reply_markup=go_to_student())
     except AccessDenied:
-        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
+        await cb.message.answer(f"Нет доступа к роли 'студент'.", reply_markup=return_to_the_start())
     await cb.answer()
 
 @common_router.callback_query(F.data == "change_role_teacher")
@@ -71,9 +71,9 @@ async def process_set_active_role_teacher(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_teacher())
+        await cb.message.answer(f"Роль 'учитель' установлена.", reply_markup=go_to_teacher())
     except AccessDenied:
-        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
+        await cb.message.answer(f"Нет доступа к роли 'учитель'.", reply_markup=return_to_the_start())
     await cb.answer()
 
 @common_router.callback_query(F.data == "change_role_admin")
@@ -83,9 +83,9 @@ async def process_set_active_role_admin(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_admin())
+        await cb.message.answer(f"Роль 'администратор' установлена.", reply_markup=go_to_admin())
     except AccessDenied:
-        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
+        await cb.message.answer(f"Нет доступа к роли 'администратор'.", reply_markup=return_to_the_start())
     await cb.answer()
 
 @common_router.callback_query(F.data == "change_role_assistant")
@@ -95,9 +95,9 @@ async def process_set_active_role_assistant(cb: CallbackQuery, state: FSMContext
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль '{role}' установлена.", reply_markup=go_to_assistant())
+        await cb.message.answer(f"Роль 'ассистент' установлена.", reply_markup=go_to_assistant())
     except AccessDenied:
-        await cb.message.answer(f"Нет доступа к роли {role}.", reply_markup=return_to_the_start())
+        await cb.message.answer(f"Нет доступа к роли 'ассистент'.", reply_markup=return_to_the_start())
     await cb.answer()
 
 
