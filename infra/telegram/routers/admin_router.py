@@ -30,10 +30,16 @@ async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext)
 async def process_grant_teacher_role_second(message: Message, state: FSMContext):
     """Ввод имени для функции grant_teacher_role"""
     username = message.text
-    async with AsyncSessionLocal() as session:
-        await grant_teacher_role(message.from_user.id, username, session)
-    await message.answer("Учитель добавлен!", reply_markup=return_to_the_menu())
-    await state.clear()
+    try:
+        async with AsyncSessionLocal() as session:
+            await grant_teacher_role(message.from_user.id, username, session)
+        await message.answer("Учитель добавлен!", reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 
 @admin_router.callback_query(F.data == "revoke_teacher_role")
@@ -49,10 +55,16 @@ async def process_revoke_teacher_role_first(cb: CallbackQuery, state: FSMContext
 async def process_revoke_teacher_role_second(message: Message, state: FSMContext):
     """Ввод имени для функции revoke_teacher_role"""
     username = message.text
-    async with AsyncSessionLocal() as session:
-        await revoke_teacher_role(message.from_user.id, username, session)
-    await message.answer("Учитель удален!", reply_markup=return_to_the_menu())
-    await state.clear()
+    try:
+        async with AsyncSessionLocal() as session:
+            await revoke_teacher_role(message.from_user.id, username, session)
+        await message.answer("Учитель удален!", reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 @admin_router.callback_query(F.data == "ban_user")
 async def process_ban_user_first(cb: CallbackQuery, state: FSMContext):
@@ -67,10 +79,16 @@ async def process_ban_user_first(cb: CallbackQuery, state: FSMContext):
 async def process_ban_user_second(message: Message, state: FSMContext):
     """Ввод имени для функции ban_user"""
     username = message.text
-    async with AsyncSessionLocal() as session:
-        await ban_user(message.from_user.id, username, session)
-    await message.answer("Пользователь забанен!", reply_markup=return_to_the_menu())
-    await state.clear()
+    try:
+        async with AsyncSessionLocal() as session:
+            await ban_user(message.from_user.id, username, session)
+        await message.answer("Пользователь забанен!", reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 @admin_router.callback_query(F.data == "unban_user")
 async def process_unban_user_first(cb: CallbackQuery, state: FSMContext):
@@ -85,10 +103,16 @@ async def process_unban_user_first(cb: CallbackQuery, state: FSMContext):
 async def process_unban_user_second(message: Message, state: FSMContext):
     """Ввод имени для функции unban_user"""
     username = message.text
-    async with AsyncSessionLocal() as session:
-        await unban_user(message.from_user.id, username, session)
-    await message.answer("Пользователь разбанен!", reply_markup=return_to_the_menu())
-    await state.clear()
+    try:
+        async with AsyncSessionLocal() as session:
+            await unban_user(message.from_user.id, username, session)
+        await message.answer("Пользователь разбанен!", reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 @admin_router.callback_query(F.data == "get_error_count_for_day")
 async def process_get_error_count_for_day_first(cb: CallbackQuery, state: FSMContext):
@@ -105,7 +129,7 @@ async def process_get_error_count_for_day_second(message: Message, state: FSMCon
     target_date: list[str] = message.text.split('-')
     async with AsyncSessionLocal() as session:
         try:
-            result = await get_error_count_for_day(message.from_user.id, date(day=int(target_date[0]), month=int(target_date[1]), year=int(target_date[2])), session)
+            result = await get_error_count_for_day(message.from_user.id, date(day=int(target_date[2]), month=int(target_date[1]), year=int(target_date[0])), session)
         except TypeError:
             result = await get_error_count_for_day(message.from_user.id, session)
     await message.answer(f"Ошибок за указанный период: {result}", reply_markup=return_to_the_menu())

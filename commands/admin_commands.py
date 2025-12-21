@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from decimal import Decimal
 from .teacher_and_assistant_commands import _check_permission, _get_user_by_username
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
-    ErrorLog, AccessDenied, GitLogs
+    ErrorLog, AccessDenied, GitLogs, GitOrganization
 
 SUCCESS_STATUS = 200
 
@@ -19,6 +19,8 @@ async def grant_teacher_role(
     """Выдать роль teacher."""
     await _check_permission(admin_telegram_id, ['admin'], 0, session)
 
+    if target_telegram_username[0] == '@':
+        target_telegram_username = target_telegram_username[1:]
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
         raise ValueError(f"Пользователь {target_telegram_username} не найден")
@@ -50,7 +52,8 @@ async def revoke_teacher_role(
 ) -> None:
     """Отобрать роль teacher."""
     await _check_permission(admin_telegram_id, ['admin'], 0, session)
-
+    if target_telegram_username[0] == '@':
+        target_telegram_username = target_telegram_username[1:]
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
         raise ValueError(f"Пользователь {target_telegram_username} не найден")
@@ -72,7 +75,8 @@ async def ban_user(
 ) -> None:
     """Забанить пользователя."""
     await _check_permission(admin_telegram_id, ['admin'], 0, session)
-
+    if target_telegram_username[0] == '@':
+        target_telegram_username = target_telegram_username[1:]
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
         raise ValueError(f"Пользователь {target_telegram_username} не найден")
@@ -91,7 +95,8 @@ async def unban_user(
 ) -> None:
     """Разбанить пользователя."""
     await _check_permission(admin_telegram_id, ['admin'], 0, session)
-
+    if target_telegram_username[0] == '@':
+        target_telegram_username = target_telegram_username[1:]
     user = await _get_user_by_username(target_telegram_username, session)
     if not user:
         raise ValueError(f"Пользователь {target_telegram_username} не найден")
@@ -111,7 +116,6 @@ async def get_error_count_for_day(
     """Количество ошибок бота за указанный день, либо вся сводка ошибок.
     Сортировка по дате по убыванию."""
     await _check_permission(admin_telegram_id, ['admin'], 0, session)
-
     if day:
         start_date = datetime.combine(day, datetime.min.time())
         end_date = datetime.combine(day, datetime.max.time())
@@ -183,3 +187,18 @@ async def get_last_failed_github_call_info(
         "status": last_failed_log.log_status,
         "message": last_failed_log.log_message
     }
+
+
+async def add_organisation(admin_telegram_id: int, teacher_telegram_id: int, name: str,
+                           session: AsyncSession = None) -> None:
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
+    query = await session.execute(select(GitOrganization).where(GitOrganization.organization_name == name))
+    existing = query.scalar_one_or_none()
+    if existing:
+        raise ValueError("Организация уже существует.")
+    new_organization = GitOrganization(
+        organization_name=name,
+        teacher_telegram_id=teacher_telegram_id
+    )
+    session.add(new_organization)
+    await session.commit()

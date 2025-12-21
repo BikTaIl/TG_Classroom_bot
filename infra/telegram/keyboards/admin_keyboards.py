@@ -10,7 +10,7 @@ def get_admin_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Разбанить пользователя", callback_data="unban_user")],
         [InlineKeyboardButton(text="Сводка ошибок бота", callback_data="get_error_count_for_day")],
         [InlineKeyboardButton(text="Последнее успешное обращение", callback_data="get_last_successful_github_call_time")],
-        [InlineKeyboardButton(text="Информация о последнем ошибочном обращении", callback_data="get_last_failed_github_call_info")],
+        [InlineKeyboardButton(text="Информация о последнем ошибочном обращении", callback_data="get_last_failed_github_call_info")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
