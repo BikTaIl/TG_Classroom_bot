@@ -68,6 +68,7 @@ def registration_url(url: str) -> InlineKeyboardMarkup:
     """Кнопка для перехода по ссылке для авторизации
     аккаунта GitHub"""
     buttons = [
-        [InlineKeyboardButton(text="Пройти авторизацию по ссылке:", url=url)]
+        [InlineKeyboardButton(text="Пройти авторизацию по ссылке:", url=url)],
+        [InlineKeyboardButton(text="Вернуться в главное меню", callback_data="start")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -127,32 +127,49 @@ async def process_get_error_count_for_day_first(cb: CallbackQuery, state: FSMCon
 async def process_get_error_count_for_day_second(message: Message, state: FSMContext):
     """Ввод даты для функции get_error_count_for_day"""
     target_date: list[str] = message.text.split('-')
-    async with AsyncSessionLocal() as session:
-        try:
-            result = await get_error_count_for_day(message.from_user.id, date(day=int(target_date[2]), month=int(target_date[1]), year=int(target_date[0])), session)
-        except TypeError:
-            result = await get_error_count_for_day(message.from_user.id, session)
-    await message.answer(f"Ошибок за указанный период: {result}", reply_markup=return_to_the_menu())
-    await state.clear()
+    try:
+        async with AsyncSessionLocal() as session:
+            try:
+                result = await get_error_count_for_day(message.from_user.id, date(day=int(target_date[2]), month=int(target_date[1]), year=int(target_date[0])), session)
+            except TypeError:
+                result = await get_error_count_for_day(message.from_user.id, session)
+        await message.answer(f"Ошибок за указанный период: {result}", reply_markup=return_to_the_menu())
+        await state.clear()
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
 
 @admin_router.callback_query(F.data == "get_last_successful_github_call_time")
 async def process_get_last_successful_github_call_time(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_last_successful_github_call_time"""
-    async with AsyncSessionLocal() as session:
-        answer = await get_last_successful_github_call_time(cb.from_user.id, session)
-    if answer:
-        await cb.message.answer(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
-    else:
-        await cb.message.answer("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            answer = await get_last_successful_github_call_time(cb.from_user.id, session)
+        if answer:
+            await cb.message.answer(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.answer("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 @admin_router.callback_query(F.data == "get_last_failed_github_call_info")
 async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_last_failed_github_call_info"""
-    async with AsyncSessionLocal() as session:
-        answer = await get_last_failed_github_call_info(cb.from_user.id, session)
-    if answer:
-        await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
-    else:
-        await cb.message.answer("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
-    await cb.answer()
+    try:
+        async with AsyncSessionLocal() as session:
+            answer = await get_last_failed_github_call_info(cb.from_user.id, session)
+        if answer:
+            await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.answer("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
