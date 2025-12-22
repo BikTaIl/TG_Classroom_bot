@@ -9,6 +9,7 @@ from adapters.table_to_text import table_to_text
 
 teacher_router = Router()
 
+
 @teacher_router.callback_query(F.data == "start_teacher")
 async def teacher_panel(cb: CallbackQuery):
     """Функция отображения панели учителя.
@@ -16,16 +17,22 @@ async def teacher_panel(cb: CallbackQuery):
     await cb.message.answer("Панель учителя:", reply_markup=get_teacher_menu())
     await cb.answer()
 
+
 @teacher_router.callback_query(F.data == "get_summary_teacher")
 async def teacher_summary_panel(cb: CallbackQuery):
     await cb.message.edit_text("Выберите сводку:", reply_markup=summaries())
     await cb.answer()
+
 
 @teacher_router.callback_query(F.data == "choose_teacher_active_course")
 async def process_choose_teacher_active_course(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             courses = await find_teachers_courses(cb.from_user.id, session)
+        if len(courses) == 0:
+            await cb.message.edit_text(
+                "Вы не являетесь преподавателем ни на одном курсе. Попробуйте выполнить ручную синхронизацию",
+                reply_markup=return_to_the_menu())
         await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, 0))
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
@@ -33,6 +40,7 @@ async def process_choose_teacher_active_course(cb: CallbackQuery, state: FSMCont
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
+
 
 @teacher_router.callback_query(F.data.startswith("set_teacher_active_course"))
 async def process_set_teacher_active_course(cb: CallbackQuery, state: FSMContext):
@@ -52,6 +60,7 @@ async def process_set_teacher_active_course(cb: CallbackQuery, state: FSMContext
     finally:
         await cb.answer()
 
+
 @teacher_router.callback_query(F.data.startswith("previous_paper_course_teacher"))
 async def process_previous_page(cb: CallbackQuery, state: FSMContext):
     data = cb.data.split(":")
@@ -66,6 +75,7 @@ async def process_previous_page(cb: CallbackQuery, state: FSMContext):
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
+
 
 @teacher_router.callback_query(F.data.startswith("next_paper_course_teacher"))
 async def process_next_page(cb: CallbackQuery, state: FSMContext):
@@ -82,6 +92,7 @@ async def process_next_page(cb: CallbackQuery, state: FSMContext):
     finally:
         await cb.answer()
 
+
 @teacher_router.callback_query(F.data == "choose_teacher_active_assignment")
 async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
@@ -97,6 +108,7 @@ async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSM
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
+
 
 @teacher_router.callback_query(F.data.startswith("set_teacher_active_assignment"))
 async def process_set_teacher_active_assignment(cb: CallbackQuery, state: FSMContext):
@@ -116,6 +128,7 @@ async def process_set_teacher_active_assignment(cb: CallbackQuery, state: FSMCon
     finally:
         await cb.answer()
 
+
 @teacher_router.callback_query(F.data.startswith("previous_paper_assignment_teacher"))
 async def process_previous_page(cb: CallbackQuery, state: FSMContext):
     data = cb.data.split(":")
@@ -133,6 +146,7 @@ async def process_previous_page(cb: CallbackQuery, state: FSMContext):
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
+
 
 @teacher_router.callback_query(F.data.startswith("next_paper_assignment_teacher"))
 async def process_next_page(cb: CallbackQuery, state: FSMContext):
@@ -152,6 +166,7 @@ async def process_next_page(cb: CallbackQuery, state: FSMContext):
     finally:
         await cb.answer()
 
+
 @teacher_router.callback_query(F.data == "get_course_students_overview_teacher")
 async def process_get_course_students_overview_teacher(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_course_students_overview_teacher"""
@@ -169,6 +184,7 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
     finally:
         await cb.answer()
 
+
 @teacher_router.callback_query(F.data == "get_assignment_students_status_teacher")
 async def process_get_assignment_students_status_teacher(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_assignment_students_status_teacher"""
@@ -177,7 +193,8 @@ async def process_get_assignment_students_status_teacher(cb: CallbackQuery, stat
     course_name = all_data.get("course_name")
     try:
         async with AsyncSessionLocal() as session:
-            assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
+            assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)),
+                                                  assignment_name, session)
             overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
         await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -271,7 +288,8 @@ async def process_get_teacher_deadline_notification_payload_teacher(cb: Callback
     course_name = all_data.get("course_name")
     try:
         async with AsyncSessionLocal() as session:
-            assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
+            assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)),
+                                                  assignment_name, session)
             overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
         if overview:
             await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
@@ -284,6 +302,7 @@ async def process_get_teacher_deadline_notification_payload_teacher(cb: Callback
     finally:
         await cb.answer()
 
+
 @teacher_router.callback_query(F.data == "add_course_assistant_teacher")
 async def process_add_course_assistant_teacher_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции add_course_assistant_teacher"""
@@ -292,6 +311,7 @@ async def process_add_course_assistant_teacher_first(cb: CallbackQuery, state: F
         "Введите ник ассистента в виде @username или username:"
     )
     await cb.answer()
+
 
 @teacher_router.message(AddAssistant.waiting_username)
 async def process_add_course_assistant_teacher_second(message: Message, state: FSMContext):
@@ -321,6 +341,7 @@ async def process_remove_course_assistant_teacher_first(cb: CallbackQuery, state
     )
     await cb.answer()
 
+
 @teacher_router.message(RemoveAssistant.waiting_username)
 async def process_remove_course_assistant_teacher_second(message: Message, state: FSMContext):
     """Ввод имени для функции remove_course_assistant_teacher"""
@@ -349,6 +370,7 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
     )
     await cb.answer()
 
+
 @teacher_router.message(AddAnnouncement.waiting_text)
 async def process_create_course_announcement_teacher_second(message: Message, state: FSMContext):
     """Ввод имени для функции create_course_announcement_teacher"""
@@ -368,6 +390,7 @@ async def process_create_course_announcement_teacher_second(message: Message, st
         await message.answer(str(err), reply_markup=return_to_the_menu())
     finally:
         await state.clear()
+
 
 @teacher_router.callback_query(F.data == "trigger_manual_sync_for_teacher_teacher")
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery):
