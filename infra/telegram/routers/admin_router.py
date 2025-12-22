@@ -7,6 +7,7 @@ from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.admin_keyboards import *
 from .states import *
 from commands.admin_commands import *
+from commands.teacher_and_assistant_commands import _get_user_by_username
 
 admin_router = Router()
 
@@ -20,19 +21,34 @@ async def admin_panel(cb: CallbackQuery):
 @admin_router.callback_query(F.data == "grant_teacher_role")
 async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции grant_teacher_role"""
-    await state.set_state(AddTeacher.waiting_username)
-    await cb.message.answer(
-        "Пришли tg username учителя в формате @username (или просто username)."
+    await state.set_state(AddTeacher.waiting_course_name)
+    await cb.message.update_text(
+        "Пришли название организации, в которую ты хочешь добавить учителя."
     )
     await cb.answer()
 
-@admin_router.message(AddTeacher.waiting_username)
+@admin_router.message(AddTeacher.waiting_course_name)
 async def process_grant_teacher_role_second(message: Message, state: FSMContext):
+    organisation_name = message.text
+    all_data = await state.get_data()
+    all_data.update(organisation_name=organisation_name)
+    await state.clear()
+    await state.set_state(AddTeacher.waiting_username)
+    await message.answer(
+        "Пришли tg username учителя в формате @username (или просто username)."
+    )
+
+@admin_router.message(AddTeacher.waiting_username)
+async def process_grant_teacher_role_third(message: Message, state: FSMContext):
     """Ввод имени для функции grant_teacher_role"""
     username = message.text
+    all_data = await state.get_data()
+    organisation_name = all_data.get("organisation_name")
     try:
         async with AsyncSessionLocal() as session:
             await grant_teacher_role(message.from_user.id, username, session)
+            user_id = await _get_user_by_username(username, session)
+            await add_organisation(message.from_user.id, user_id, organisation_name, session)
         await message.answer("Учитель добавлен!", reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
@@ -46,7 +62,7 @@ async def process_grant_teacher_role_second(message: Message, state: FSMContext)
 async def process_revoke_teacher_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции revoke_teacher_role"""
     await state.set_state(RemoveTeacher.waiting_username)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Пришли tg username учителя в формате @username (или просто username)."
     )
     await cb.answer()
@@ -70,7 +86,7 @@ async def process_revoke_teacher_role_second(message: Message, state: FSMContext
 async def process_ban_user_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции ban_user"""
     await state.set_state(Ban.waiting_username)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Пришли tg username пользователя в формате @username (или просто username)."
     )
     await cb.answer()
@@ -94,7 +110,7 @@ async def process_ban_user_second(message: Message, state: FSMContext):
 async def process_unban_user_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции unban_user"""
     await state.set_state(Unban.waiting_username)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Пришли tg username пользователя в формате @username (или просто username)."
     )
     await cb.answer()
@@ -118,7 +134,7 @@ async def process_unban_user_second(message: Message, state: FSMContext):
 async def process_get_error_count_for_day_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_error_count_for_day"""
     await state.set_state(FindErrors.waiting_date)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Пришли дату, для которой хочешь узнать сводку в формате ГГГГ-ММ-ДД, или напиши '-' для общей сводки"
     )
     await cb.answer()
@@ -147,13 +163,13 @@ async def process_get_last_successful_github_call_time(cb: CallbackQuery, state:
         async with AsyncSessionLocal() as session:
             answer = await get_last_successful_github_call_time(cb.from_user.id, session)
         if answer:
-            await cb.message.answer(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
+            await cb.message.update_text(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
         else:
-            await cb.message.answer("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
+            await cb.message.update_text("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -164,12 +180,12 @@ async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSM
         async with AsyncSessionLocal() as session:
             answer = await get_last_failed_github_call_info(cb.from_user.id, session)
         if answer:
-            await cb.message.answer(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
+            await cb.message.update_text(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
         else:
-            await cb.message.answer("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
+            await cb.message.update_text("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()

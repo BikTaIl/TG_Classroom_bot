@@ -33,11 +33,11 @@ async def process_login_link_github(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             answer = await login_link_github(cb.from_user.id, session)
-            await cb.message.answer(f"Запрашиваемый URL:", reply_markup=registration_url(answer))
+            await cb.message.update_text(f"Запрашиваемый URL:", reply_markup=registration_url(answer))
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     finally:
         await cb.answer()
 
@@ -47,11 +47,11 @@ async def process_logout_user(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await login_link_github(cb.from_user.id, session)
-            await cb.message.answer(f"Аккаунт разлогинен.", reply_markup=return_to_the_start())
+            await cb.message.update_text(f"Аккаунт разлогинен.", reply_markup=return_to_the_start())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     finally:
         await cb.answer()
 
@@ -59,7 +59,7 @@ async def process_logout_user(cb: CallbackQuery, state: FSMContext):
 async def process_set_active_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_active_role"""
     """Установить активную роль пользователя: 'student', 'teacher', 'assistant', 'admin'. С проверкой на доступность роли"""
-    await cb.message.answer(
+    await cb.message.update_text(
         "Выберите одну из возможных ролей:", reply_markup=choose_role()
     )
     await cb.answer()
@@ -86,11 +86,11 @@ async def process_set_active_role_teacher(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль 'учитель' установлена.", reply_markup=go_to_teacher())
+        await cb.message.update_text(f"Роль 'учитель' установлена.", reply_markup=go_to_teacher())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     finally:
         await cb.answer()
 
@@ -101,11 +101,11 @@ async def process_set_active_role_admin(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль 'администратор' установлена.", reply_markup=go_to_admin())
+        await cb.message.update_text(f"Роль 'администратор' установлена.", reply_markup=go_to_admin())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     finally:
         await cb.answer()
 
@@ -116,11 +116,11 @@ async def process_set_active_role_assistant(cb: CallbackQuery, state: FSMContext
     try:
         async with AsyncSessionLocal() as session:
             await set_active_role(cb.from_user.id, role, session)
-        await cb.message.answer(f"Роль 'ассистент' установлена.", reply_markup=go_to_assistant())
+        await cb.message.update_text(f"Роль 'ассистент' установлена.", reply_markup=go_to_assistant())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     finally:
         await cb.answer()
 
@@ -131,11 +131,11 @@ async def process_toggle_global_notifications(cb: CallbackQuery, state: FSMConte
     try:
         async with AsyncSessionLocal() as session:
             await toggle_global_notifications(cb.from_user.id, session)
-            await cb.message.answer("Рычаг уведомлений переключен.", reply_markup=return_to_the_start())
+            await cb.message.update_text("Рычаг уведомлений переключен.", reply_markup=return_to_the_start())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_start())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_start())
     finally:
         await cb.answer()
 
@@ -143,7 +143,7 @@ async def process_toggle_global_notifications(cb: CallbackQuery, state: FSMConte
 async def process_change_git_account_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции change_git_account"""
     await state.set_state(ChangeGitHubAccount.waiting_login)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Введи логин гитхаба, на который хочешь переключиться."
     )
     await cb.answer()
@@ -165,7 +165,7 @@ async def process_change_git_account_second(message: Message, state: FSMContext)
 async def process_enter_name_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции enter_name"""
     await state.set_state(EnterName.waiting_name)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Введите свое ФИО:"
     )
     await cb.answer()

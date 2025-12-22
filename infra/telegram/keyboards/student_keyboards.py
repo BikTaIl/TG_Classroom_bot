@@ -14,6 +14,7 @@ def get_student_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Сводка по всем оцененным заданиям", callback_data="get_student_grades_summary")],
         [InlineKeyboardButton(text="Подробности по конкретной задаче", callback_data="get_student_assignment_details")],
         [InlineKeyboardButton(text="Отправить обратную связь по курсу", callback_data="submit_course_feedback")],
+        [InlineKeyboardButton(text="В главное меню", callback_data="start")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

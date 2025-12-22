@@ -8,12 +8,14 @@ from sqlalchemy.orm.base import state_class_str
 
 class AddTeacher(StatesGroup):
     waiting_username = State()
+    waiting_course_name = State()
 
 class AddAssistant(StatesGroup):
     waiting_username = State()
 
 class RemoveTeacher(StatesGroup):
     waiting_username = State()
+    waiting_course_name = State()
 
 class RemoveAssistant(StatesGroup):
     waiting_username = State()
@@ -34,19 +36,19 @@ class ChangeGitHubAccount(StatesGroup):
     waiting_login = State()
 
 class ChangeCourseTeacher(StatesGroup):
-    waiting_course_id = State()
+    waiting_course_name = State()
 
 class ChangeCourseAssistant(StatesGroup):
-    waiting_course_id = State()
+    waiting_course_name = State()
 
 class ChangeCourse(StatesGroup):
-    waiting_course_id = State()
+    waiting_course_name = State()
 
 class ChangeAssignmentTeacher(StatesGroup):
-    waiting_course_id = State()
+    waiting_assignment_name = State()
 
 class ChangeAssignmentAssistant(StatesGroup):
-    waiting_course_id = State()
+    waiting_assignment_name = State()
 
 class NewDeadline(StatesGroup):
     waiting_hours = State()
