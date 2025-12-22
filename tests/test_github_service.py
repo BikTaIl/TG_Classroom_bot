@@ -156,5 +156,3 @@ async def test_complete_github_link_success(async_session):
     res = await async_session.execute(select(GithubAccount))
     account = res.scalar_one()
     assert account.github_username == "github_user"
-
-
