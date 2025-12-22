@@ -1,5 +1,7 @@
-from typing import Optional, Sequence, Mapping, Any, Row
+from typing import Optional, Sequence, Mapping, Any, List, Tuple
 from datetime import datetime, date
+
+from requests import session
 from sqlalchemy import select, update, delete, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -176,7 +178,7 @@ async def get_student_grades_summary(
         and_(
             Submission.assignment_id == Assignment.github_assignment_id,
             Submission.student_telegram_id == telegram_id,
-            Submission.is_submitted is True
+            Submission.is_submitted == True
         )
     ).where(
         Assignment.classroom_id.in_(courses)
@@ -210,7 +212,8 @@ async def get_student_assignment_details(
 ) -> Mapping[str, Any]:
     """Подробности по конкретной задаче: статус, балл, дата сдачи."""
     courses = await _get_students_courses(telegram_id, session)
-    course = await select(Assignment.classroom_id).where(Assignment.github_assignment_id == assignment_id).one_or_none()
+    course_q = await session.execute(select(Assignment.classroom_id).where(Assignment.github_assignment_id == assignment_id))
+    course = course_q.scalar_one_or_none()
     if course not in courses:
         raise ValueError("Студент не может просматривать данное задание.")
     query = select(
@@ -272,7 +275,7 @@ async def submit_course_feedback(
 async def find_students_courses(
         student_telegram_id: int,
         session: AsyncSession
-) -> Sequence[Row[tuple[int, str]]]:
+) -> list[tuple[Any, ...]]:
     """Вытягивает по айди студента курсы, где он является учеником (есть сабмиты)"""
     user_query = await session.execute(select(User).where(User.telegram_id == student_telegram_id))
     user = user_query.scalar_one_or_none()

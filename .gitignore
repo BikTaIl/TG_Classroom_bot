@@ -1,5 +1,6 @@
 .env
 .venv
+.coverage
 testing.py
 buffer.py
 check.py

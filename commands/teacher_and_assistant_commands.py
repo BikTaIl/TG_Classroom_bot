@@ -1,4 +1,5 @@
-from typing import Optional, Sequence, Mapping, Any, Row
+from typing import Optional, Sequence, Mapping, Any, List, Tuple
+from sqlalchemy import Row
 from datetime import datetime, date
 from sqlalchemy import select, update, delete, and_, or_, func, case, distinct, true
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,8 @@ async def _get_user_by_username(username: str, session: AsyncSession) -> Optiona
 async def _check_permission(telegram_id: int, key_roles: list[str], course_id: int, session: AsyncSession) -> None:
     """Проверить, имеет ли пользователь активную роль"""
     user = await session.get(User, telegram_id)
+    if user is None:
+        raise ValueError(f"Такого пользователя не существует")
     if user.banned:
         raise AccessDenied(f"Пользователь {telegram_id} забанен.")
     role = user.active_role
@@ -652,7 +655,7 @@ async def find_assignment(
 async def find_teachers_courses(
         teacher_telegram_id: int,
         session: AsyncSession
-) -> Sequence[Row[tuple[int, str]]]:
+) -> list[tuple[Any, ...]]:
     """По айди учителя вытаскивает список курсов (айди и имена), которыми он владеет"""
     org_query = await session.execute(
         select(GitOrganization.organization_name).where(GitOrganization.teacher_telegram_id == teacher_telegram_id))
@@ -668,7 +671,7 @@ async def find_teachers_courses(
 async def find_assistants_courses(
         assistant_telegram_id: int,
         session: AsyncSession
-) -> Sequence[Row[tuple[int, str]]]:
+) -> list[tuple[Any, ...]]:
     """По айди ассистента вытаскивает список курсов (айди и имена), к которым он прикреплен"""
     courses_query = await session.execute(select(Assistant.course_id, Course.name
                                                  ).join(Course, Assistant.course_id == Course.classroom_id
@@ -679,7 +682,7 @@ async def find_assistants_courses(
 async def find_assignments_by_course_id(
         course_id: int,
         session: AsyncSession
-) -> Sequence[Row[tuple[int, str]]]:
+) -> list[tuple[Any, ...]]:
     if course_id is None:
         raise ValueError('Курс не выбран')
     assignments_query = await session.execute(
