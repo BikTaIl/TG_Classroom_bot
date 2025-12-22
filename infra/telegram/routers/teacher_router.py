@@ -4,7 +4,6 @@ from aiogram import Router, F
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.teacher_keyboards import *
 from .states import *
-from commands.sync import sync_function
 from commands.teacher_and_assistant_commands import *
 from adapters.table_to_text import table_to_text
 
@@ -22,62 +21,136 @@ async def teacher_summary_panel(cb: CallbackQuery):
     await cb.message.edit_text("Выберите сводку:", reply_markup=summaries())
     await cb.answer()
 
-@teacher_router.callback_query(F.data == "set_teacher_active_course_teacher")
-async def process_set_teacher_active_course_teacher_first(cb: CallbackQuery, state: FSMContext):
-    """Запуск по кнопке функции set_teacher_active_course_teacher"""
-    await state.set_state(ChangeCourseTeacher.waiting_course_name)
-    await cb.message.edit_text(
-        "Введите название желаемого курса или '-', если хотите сбросить курс"
-    )
-    await cb.answer()
-
-@teacher_router.message(ChangeCourseTeacher.waiting_course_name)
-async def process_set_teacher_active_course_teacher_second(message: Message, state: FSMContext):
-    """Ввод ID курса для функции set_teacher_active_course_teacher"""
-    course_name = message.text
+@teacher_router.callback_query(F.data == "choose_teacher_active_course")
+async def process_choose_teacher_active_course(cb: CallbackQuery, state: FSMContext):
     try:
-        if course_name == '-':
-            await state.update_data(course_name=None)
-            await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
-        else:
-            async with AsyncSessionLocal() as session:
-                course = await find_course(message.from_user.id, course_name, session)
-            await state.update_data(course_name=course)
-            await message.answer("Курс установлен", reply_markup=return_to_the_menu())
+        async with AsyncSessionLocal() as session:
+            courses = await find_teachers_courses(cb.from_user.id, session)
+        await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, 0))
     except AccessDenied as err:
-        await message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
-@teacher_router.callback_query(F.data == "set_teacher_active_assignment_teacher")
-async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery, state: FSMContext):
-    """Запуск по кнопке функции set_teacher_active_assignment_teacher"""
-    await state.set_state(ChangeAssignmentTeacher.waiting_assignment_name)
-    await cb.message.edit_text(
-        "Введите название желаемого задания или '-', если хотите сбросить его."
-    )
-    await cb.answer()
+@teacher_router.callback_query(F.data.startswith("set_teacher_active_course"))
+async def process_set_teacher_active_course(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    course_name = int(data[1])
+    try:
+        if course_name == 'Сбросить курс':
+            await state.update_data(course_name=None)
+            await cb.message.answer("Курс сброшен", reply_markup=return_to_the_menu())
+        else:
+            await state.update_data(course_name=course_name)
+            await cb.message.answer("Курс установлен", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
-@teacher_router.message(ChangeAssignmentTeacher.waiting_assignment_name)
-async def process_set_teacher_active_assignment_teacher_second(message: Message, state: FSMContext):
-    """Ввод ID курса для функции set_teacher_active_assignment_teacher"""
-    assignment_name = message.text
+@teacher_router.callback_query(F.data.startswith("previous_paper_course_teacher"))
+async def process_previous_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    try:
+        async with AsyncSessionLocal() as session:
+            courses = await find_teachers_courses(cb.from_user.id, session)
+        await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, page - 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@teacher_router.callback_query(F.data.startswith("next_paper_course_teacher"))
+async def process_next_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    try:
+        async with AsyncSessionLocal() as session:
+            courses = await find_teachers_courses(cb.from_user.id, session)
+        await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, page + 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@teacher_router.callback_query(F.data == "choose_teacher_active_assignment")
+async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSMContext):
     all_data = await state.get_data()
     course_name = all_data.get("course_name")
     try:
-        if assignment_name == '-':
-            await state.update_data(assignment_name=None)
-            await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
-        elif not course_name:
-            await message.answer("Для выбора задания выберите курс.", reply_markup=choose_course())
-        else:
-            await state.update_data(assignment_name=int(assignment_name))
-            await message.answer("Задание установлено", reply_markup=return_to_the_menu())
+        async with AsyncSessionLocal() as session:
+            course_id = await find_course(cb.from_user.id, course_name, session)
+            assignments = await find_assignments_by_course_id(course_id, session)
+        await cb.message.edit_text("Выберите задание:", reply_markup=choose_assignment(assignments, 0))
     except AccessDenied as err:
-        await message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
+@teacher_router.callback_query(F.data.startswith("set_teacher_active_assignment"))
+async def process_set_teacher_active_assignment(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    assignment_name = int(data[1])
+    try:
+        if assignment_name == 'Сбросить задание':
+            await state.update_data(assignment_name=None)
+            await cb.message.answer("Задание сброшено", reply_markup=return_to_the_menu())
+        else:
+            await state.update_data(assignment_name=assignment_name)
+            await cb.message.answer("Задание установлено", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@teacher_router.callback_query(F.data.startswith("previous_paper_assignment_teacher"))
+async def process_previous_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    all_data = await state.get_data()
+    course_name = all_data.get("course_name")
+    try:
+        async with AsyncSessionLocal() as session:
+            course_id = await find_course(cb.from_user.id, course_name, session)
+            assignments = await find_assignments_by_course_id(course_id, session)
+        await cb.message.edit_text("Выберите задание:", reply_markup=choose_assignment(assignments, page - 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@teacher_router.callback_query(F.data.startswith("next_paper_assignment_teacher"))
+async def process_next_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    all_data = await state.get_data()
+    course_name = all_data.get("course_name")
+    try:
+        async with AsyncSessionLocal() as session:
+            course_id = await find_course(cb.from_user.id, course_name, session)
+            assignments = await find_assignments_by_course_id(course_id, session)
+        await cb.message.edit_text("Выберите задание:", reply_markup=choose_assignment(assignments, page + 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 @teacher_router.callback_query(F.data == "get_course_students_overview_teacher")
 async def process_get_course_students_overview_teacher(cb: CallbackQuery, state: FSMContext):
@@ -235,6 +308,8 @@ async def process_add_course_assistant_teacher_second(message: Message, state: F
         await message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 
 @teacher_router.callback_query(F.data == "remove_course_assistant_teacher")
@@ -261,6 +336,8 @@ async def process_remove_course_assistant_teacher_second(message: Message, state
         await message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 
 @teacher_router.callback_query(F.data == "create_course_announcement_teacher")
@@ -281,7 +358,7 @@ async def process_create_course_announcement_teacher_second(message: Message, st
     try:
         async with AsyncSessionLocal() as session:
             course_id = await find_course(message.from_user.id, course_name, session)
-            students_id = await create_course_announcement(message.from_user.id, course_name, text, session)
+            students_id = await create_course_announcement(message.from_user.id, course_name, session)
         for student_id in students_id:
             await message.bot.send_message(student_id, text)
         await message.answer("Уведомление успешно создано!", reply_markup=return_to_the_menu())
@@ -289,6 +366,8 @@ async def process_create_course_announcement_teacher_second(message: Message, st
         await message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 @teacher_router.callback_query(F.data == "trigger_manual_sync_for_teacher_teacher")
 async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery):

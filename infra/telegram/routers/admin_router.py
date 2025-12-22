@@ -155,6 +155,8 @@ async def process_get_error_count_for_day_second(message: Message, state: FSMCon
         await message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 @admin_router.callback_query(F.data == "get_last_successful_github_call_time")
 async def process_get_last_successful_github_call_time(cb: CallbackQuery, state: FSMContext):
