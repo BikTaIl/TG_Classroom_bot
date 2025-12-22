@@ -16,6 +16,11 @@ async def admin_panel(cb: CallbackQuery):
     await cb.message.answer("Панель ассистента:", reply_markup=get_assistant_menu())
     await cb.answer()
 
+@assistant_router.callback_query(F.data == "get_summary_assistant")
+async def teacher_summary_panel(cb: CallbackQuery):
+    await cb.message.answer("Выберите сводку:", reply_markup=summaries())
+    await cb.answer()
+
 @assistant_router.callback_query(F.data == "set_teacher_active_course_assistant")
 async def process_set_teacher_active_course_assistant_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_course_assistant"""
@@ -56,11 +61,15 @@ async def process_set_teacher_active_assignment_assistant_first(cb: CallbackQuer
 async def process_set_teacher_active_assignment_assistant_second(message: Message, state: FSMContext):
     """Ввод ID курса для функции set_teacher_active_assignment_assistant"""
     assignment_name = message.text
+    all_data = await state.get_data()
+    course_name = all_data.get("course_name")
     try:
         async with AsyncSessionLocal() as session:
             if assignment_name == '-':
                 await state.update_data(assignment_name=None)
                 await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
+            elif not course_name:
+                await message.answer("Для выбора задания выберите курс.", reply_markup=choose_course())
             else:
                 await state.update_data(assignment_name=assignment_name)
                 await message.answer("Задание установлено", reply_markup=return_to_the_menu())

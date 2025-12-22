@@ -11,10 +11,15 @@ from adapters.table_to_text import table_to_text
 teacher_router = Router()
 
 @teacher_router.callback_query(F.data == "start_teacher")
-async def admin_panel(cb: CallbackQuery):
+async def teacher_panel(cb: CallbackQuery):
     """Функция отображения панели учителя.
        Отображается только по кнопке, через команду зайти нельзя."""
     await cb.message.answer("Панель учителя:", reply_markup=get_teacher_menu())
+    await cb.answer()
+
+@teacher_router.callback_query(F.data == "get_summary_teacher")
+async def teacher_summary_panel(cb: CallbackQuery):
+    await cb.message.answer("Выберите сводку:", reply_markup=summaries())
     await cb.answer()
 
 @teacher_router.callback_query(F.data == "set_teacher_active_course_teacher")
@@ -55,10 +60,14 @@ async def process_set_teacher_active_assignment_teacher_first(cb: CallbackQuery,
 async def process_set_teacher_active_assignment_teacher_second(message: Message, state: FSMContext):
     """Ввод ID курса для функции set_teacher_active_assignment_teacher"""
     assignment_name = message.text
+    all_data = await state.get_data()
+    course_name = all_data.get("course_name")
     try:
         if assignment_name == '-':
             await state.update_data(assignment_name=None)
             await message.answer("Задание сброшено", reply_markup=return_to_the_menu())
+        elif not course_name:
+            await message.answer("Для выбора задания выберите курс.", reply_markup=choose_course())
         else:
             await state.update_data(assignment_name=int(assignment_name))
             await message.answer("Задание установлено", reply_markup=return_to_the_menu())
@@ -95,7 +104,7 @@ async def process_get_assignment_students_status_teacher(cb: CallbackQuery, stat
     try:
         async with AsyncSessionLocal() as session:
             assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
-            overview = await get_assignment_students_status(cb.from_user.id, assignment_name, session)
+            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
         await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())
