@@ -94,6 +94,12 @@ async def async_session():
             active_github_username="stud_github_2",
             notifications_enabled=True
         )
+        student2 = User(
+            telegram_id=9,
+            telegram_username="student_user_2",
+            active_github_username="stud_github_2",
+            notifications_enabled=True
+        )
         org = GitOrganization(organization_name="Org1", teacher_telegram_id=6)
         gh_account = GithubAccount(user_telegram_id=8, github_username="stud_github")
         course = Course(classroom_id=101, name="Course 101", organization_name="Org1")
@@ -167,6 +173,14 @@ async def test_create_user(async_session):
     assert user.active_role is None
     assert user.sync_count == 0
     assert user.notifications_enabled is True
+    assert user.banned is False
+
+
+@pytest.mark.asyncio
+async def test_create_user_existing(async_session):
+    await create_user(1, "testuser", async_session)
+    with pytest.raises(ValueError):
+        await create_user(1, "testuser", async_session)
 
 
 @pytest.mark.asyncio
@@ -182,6 +196,12 @@ async def test_set_active_role(async_session):
 
     with pytest.raises(AccessDenied):
         await set_active_role(2, "teacher", async_session)
+
+    with pytest.raises(AccessDenied):
+        await set_active_role(2, "assistant", async_session)
+
+    with pytest.raises(AccessDenied):
+        await set_active_role(2, "admin", async_session)
 
     with pytest.raises(ValueError):
         await set_active_role(2, "invalid_role", async_session)
@@ -215,10 +235,22 @@ async def test_change_git_account(async_session):
     await change_git_account(4, "gitlogin", async_session)
     updated_user = await async_session.get(User, 4)
     assert updated_user.active_github_username == "gitlogin"
-
     with pytest.raises(ValueError):
         await change_git_account(4, "wronglogin", async_session)
 
+@pytest.mark.asyncio
+async def test_change_to_denied_git_account(async_session):
+    user1 = User(telegram_id=4, telegram_username="gituser")
+    git1 = GithubAccount(github_username="gitlogin", user_telegram_id=4)
+    user2 = User(telegram_id=5, telegram_username="gituser2")
+    async_session.add_all([user1, git1])
+    async_session.add_all([user2])
+    await async_session.commit()
+    await change_git_account(4, "gitlogin", async_session)
+    updated_user = await async_session.get(User, 4)
+    assert updated_user.active_github_username == "gitlogin"
+    with pytest.raises(ValueError):
+        await change_git_account(5, "gitlogin", async_session)
 
 @pytest.mark.asyncio
 async def test_enter_name(async_session):
@@ -257,13 +289,24 @@ async def test_revoke_teacher_role(async_session):
 
 
 @pytest.mark.asyncio
+async def test_revoke_teacher_role_if_not_exist(async_session):
+    with pytest.raises(ValueError):
+        await revoke_teacher_role(6, "target_user", async_session)
+
+
+@pytest.mark.asyncio
 async def test_ban_unban_user(async_session):
     await ban_user(6, "target_user", async_session)
     user_stmt = select(User).where(User.telegram_id == 7)
     res = await async_session.execute(user_stmt)
     target = res.scalar_one()
     assert target.banned is True
-
+    with pytest.raises(AccessDenied, match="забанен"):
+        await grant_teacher_role(target.telegram_id, "target_user", async_session)
+    with pytest.raises(AccessDenied, match="забанен"):
+        await get_classroom_users_without_bot_accounts(target.telegram_id, 101, async_session)
+    with pytest.raises(AccessDenied, match="забанен"):
+        await get_teacher_deadline_notification_payload(target.telegram_id, 201, async_session)
     await unban_user(6, "target_user", async_session)
     res = await async_session.execute(user_stmt)
     target = res.scalar_one()
@@ -403,6 +446,8 @@ async def test_get_student_grades_summary_multiple_courses(async_session: AsyncS
     titles = [g['assignment'] for g in grades]
     assert "Assignment 1" in titles
     assert "Assignment 3" in titles
+    assert "Assignment 2" not in titles
+
 
 @pytest.mark.asyncio
 async def test_get_student_grades_summary_no_score(async_session: AsyncSession):

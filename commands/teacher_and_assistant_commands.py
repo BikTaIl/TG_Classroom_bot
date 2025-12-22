@@ -618,7 +618,7 @@ async def trigger_manual_sync_for_teacher(
         raise ValueError(f"У {teacher_telegram_id} некорректное поле sync_count.")
     if user.sync_count >= 3:
         try:
-            await _check_permission(teacher_telegram_id, ['admin'], 0, session)
+            await _check_permission(teacher_telegram_id, ['admin', 'teacher'], 0, session)
         except AccessDenied:
             raise ValueError(f"Вы сделали больше 3 обновлений")
     user.sync_count += 1
@@ -701,15 +701,3 @@ async def find_assignments_by_course_id(
         select(Assignment.github_assignment_id, Assignment.title).where(Assignment.classroom_id == course_id))
     return [tuple(row) for row in assignments_query.all()]
 
-
-async def select_manual_check_assignment(
-        assignment_id: int,
-        session: AsyncSession
-) -> None:
-    if assignment_id is None:
-        raise ValueError("Задание не выбрано")
-    assignment = await session.get(Assignment, assignment_id)
-    if assignment is None:
-        raise ValueError("Выбранное задание отсутствует")
-    assignment.grading_mode = 'manual'
-    await session.commit()
