@@ -18,14 +18,14 @@ async def admin_panel(cb: CallbackQuery):
 
 @assistant_router.callback_query(F.data == "get_summary_assistant")
 async def teacher_summary_panel(cb: CallbackQuery):
-    await cb.message.answer("Выберите сводку:", reply_markup=summaries())
+    await cb.message.update_text("Выберите сводку:", reply_markup=summaries())
     await cb.answer()
 
 @assistant_router.callback_query(F.data == "set_teacher_active_course_assistant")
 async def process_set_teacher_active_course_assistant_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_course_assistant"""
     await state.set_state(ChangeCourseAssistant.waiting_course_name)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Введите название желаемого курса или '-', если хотите сбросить курс"
     )
     await cb.answer()
@@ -52,7 +52,7 @@ async def process_set_teacher_active_course_assistant_second(message: Message, s
 async def process_set_teacher_active_assignment_assistant_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_teacher_active_assignment_assistant"""
     await state.set_state(ChangeAssignmentAssistant.waiting_assignment_name)
-    await cb.message.answer(
+    await cb.message.update_text(
         "Введите название желаемого задания или '-', если хотите сбросить его."
     )
     await cb.answer()
@@ -88,11 +88,11 @@ async def process_get_course_students_overview_assistant(cb: CallbackQuery, stat
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             overview = await get_course_students_overview(cb.from_user.id, course_id, session)
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.update_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -106,11 +106,11 @@ async def process_get_assignment_students_status_assistant(cb: CallbackQuery, st
         async with AsyncSessionLocal() as session:
             assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
             overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.update_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -127,11 +127,11 @@ async def process_get_classroom_users_without_bot_accounts_assistant(cb: Callbac
         result = ""
         for username in overview:
             result += username + "\n"
-        await cb.message.answer(result, reply_markup=return_to_the_menu())
+        await cb.message.update_text(result, reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -145,11 +145,11 @@ async def process_get_course_deadlines_overview_assistant(cb: CallbackQuery, sta
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.update_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -163,11 +163,11 @@ async def process_get_tasks_to_grade_summary_assistant(cb: CallbackQuery, state:
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.update_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -181,11 +181,11 @@ async def process_get_manual_check_submissions_summary_assistant(cb: CallbackQue
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
-        await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+        await cb.message.update_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -201,12 +201,12 @@ async def process_get_teacher_deadline_notification_payload_assistant(cb: Callba
             assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
             overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
         if overview:
-            await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
+            await cb.message.update_text(await table_to_text(overview), reply_markup=return_to_the_menu())
         else:
-            await cb.message.answer("Данных нет")
+            await cb.message.update_text("Данных нет")
     except AccessDenied as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
