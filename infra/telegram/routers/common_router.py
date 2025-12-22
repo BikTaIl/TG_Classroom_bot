@@ -160,6 +160,8 @@ async def process_change_git_account_second(message: Message, state: FSMContext)
         await message.answer(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_start())
+    finally:
+        await state.clear()
 
 @common_router.callback_query(F.data == "enter_name")
 async def process_enter_name_first(cb: CallbackQuery, state: FSMContext):
@@ -182,3 +184,5 @@ async def process_enter_name_second(message: Message, state: FSMContext):
         await message.answer(str(err), reply_markup=return_to_the_start())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_start())
+    finally:
+        await state.clear()
