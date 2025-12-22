@@ -1,23 +1,17 @@
 from typing import Sequence, Mapping, Any, Union
 
-from prettytable import PrettyTable
-
 async def table_to_text(data: Union[Sequence[Mapping[str, Any]], Mapping[str, Any]]) -> str:
-    table = PrettyTable()
-    if isinstance(data, Sequence):
-        headers = list(data[0].keys())
-        table.field_names = headers
-        for row in data:
-            data_row = []
-            for header in headers:
-                data_row.append(row.get(header, ""))
-            table.add_row(data_row)
-    else:
-        headers = data.keys()
-        table.field_names = headers
-        data_row = []
-        for header in headers:
-            data_row.append(data.get(header, ""))
-        table.add_row(data_row)
-    return str(table)
-
+    if not data:
+        raise ValueError("Пустые данные")
+    if isinstance(data, Mapping):
+        data = [data]
+    headers = list(data[0].keys())
+    max_key_len = max(len(str(key)) for key in headers)
+    lines = []
+    for i, row in enumerate(data):
+        for key in headers:
+            value = str(row.get(key, ""))
+            lines.append(f"{str(key).ljust(max_key_len)} : {value}")
+        if i < len(data) - 1:
+            lines.append("-" * (max_key_len + 20))
+    return f"<pre>{'\n'.join(lines)}</pre>"

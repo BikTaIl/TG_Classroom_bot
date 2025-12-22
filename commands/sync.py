@@ -53,10 +53,12 @@ async def sync_function(session: AsyncSession) -> None:
                         student_telegram_id: Optional[int] = result_tg_id.scalar_one_or_none()
                         repo_url: str = submission['repository']['html_url']
                         is_submitted: bool = submission['submitted']
+                        submitted_at: Optional[datetime] = datetime.strptime(submission['last_commit_at'], '%Y-%m-%dT%H:%M:%SZ')
                         score: Optional[float] = submission['grade']
                         new_submission: Submission = Submission(
                             id=submission_id,
                             assignment_id=assignment_id,
+                            submitted_at=submitted_at,
                             student_github_username=github_username,
                             student_telegram_id=student_telegram_id,
                             repo_url=repo_url,
@@ -131,6 +133,6 @@ async def zero_sync_counter(session: AsyncSession) -> None:
     """Функция обнуляет все счетчики количества синхронизаций в полночь"""
     now = datetime.now()
     if now.hour == 0 and 0 <= now.minute <= 20:
-        with session.begin():
+        async with session.begin():
             stmt = update(User).values(sync_count=0)
             await session.execute(stmt)
