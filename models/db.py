@@ -110,6 +110,7 @@ class Assignment(Base):
     title = Column(String)
     max_score = Column(Numeric)
     deadline_full = Column(TIMESTAMP)
+    grading_mode = Column(String)
     created_at = Column(
         TIMESTAMP,
         server_default=text("NOW()")

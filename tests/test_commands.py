@@ -1,5 +1,6 @@
 import pytest
 import pytest_asyncio
+from unittest.mock import patch
 from datetime import datetime, timedelta, date
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -16,7 +17,8 @@ from models.db import (
     Notification,
     Course,
     Assignment,
-    Submission
+    Submission,
+    Assistant
 )
 from commands.common_commands import (
     create_user,
@@ -47,6 +49,16 @@ from commands.student_commands import (
     remove_student_notification_rule,
     get_student_assignment_details
 )
+from commands.teacher_and_assistant_commands import (
+    get_manual_check_submissions_summary,
+    get_teacher_deadline_notification_payload,
+    remove_course_assistant,
+    add_course_assistant,
+    create_course_announcement,
+    trigger_manual_sync_for_teacher,
+    select_manual_check_assignment
+)
+
 
 DATABASE_URL = "postgresql+asyncpg://bot_admin@localhost:5433/testdb"
 
@@ -59,16 +71,24 @@ async def async_session():
         await conn.run_sync(Base.metadata.create_all)
     async_session_maker = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     async with async_session_maker() as session:
-        admin = User(telegram_id=6, telegram_username="admin_user", active_role='admin')
-        target = User(telegram_id=7, telegram_username="target_user")
+        admin = User(telegram_id=6, telegram_username="admin_user", active_role='admin', sync_count=3)
+        target = User(telegram_id=7, telegram_username="target_user", sync_count=3)
         permission = Permission(telegram_id=6, permitted_role='admin')
         student = User(
             telegram_id=8,
             telegram_username="student_user",
             active_github_username="stud_github",
+            full_name="student_user",
+            notifications_enabled=True
+        )
+        student2 = User(
+            telegram_id=9,
+            telegram_username="student_user_2",
+            active_github_username="stud_github_2",
             notifications_enabled=True
         )
         org = GitOrganization(organization_name="Org1", teacher_telegram_id=6)
+        gh_account = GithubAccount(user_telegram_id=8, github_username="stud_github")
         course = Course(classroom_id=101, name="Course 101", organization_name="Org1")
         assignment1 = Assignment(
             github_assignment_id=201,
@@ -98,17 +118,34 @@ async def async_session():
             student_telegram_id=8,
             is_submitted=False
         )
+        assignment_manual = Assignment(
+            github_assignment_id=203,
+            classroom_id=101,
+            title="Manual Assignment",
+            max_score=100,
+            grading_mode="manual",
+            deadline_full=datetime.now() + timedelta(days=2)
+        )
+        submission_manual = Submission(
+            assignment_id=203,
+            student_github_username="stud_github",
+            student_telegram_id=8,
+            is_submitted=True,
+            score=None,
+            submitted_at=datetime.now()
+        )
         notification1 = Notification(telegram_id=8, notification_time=24)
         notification2 = Notification(telegram_id=8, notification_time=3)
-        session.add_all([admin, target, student, permission])
+        session.add_all([admin, target, student, permission, student2])
         await session.flush()
         session.add(org)
         await session.flush()
         session.add(course)
         await session.flush()
-        session.add_all([assignment1, assignment2])
+        session.add_all([assignment1, assignment2, assignment_manual])
         await session.flush()
-        session.add_all([submission1, submission2, notification1, notification2])
+        session.add(gh_account)
+        session.add_all([submission1, submission2, submission_manual, notification1, notification2])
         await session.commit()
         yield session
     await engine.dispose()
@@ -339,14 +376,14 @@ async def test_get_student_grades_summary_multiple_courses(async_session: AsyncS
     org = await async_session.get(GitOrganization, "Org1")
     course2 = Course(classroom_id=102, name="Course 102", organization_name=org.organization_name)
     assignment3 = Assignment(
-        github_assignment_id=203,
+        github_assignment_id=204,
         classroom_id=102,
         title="Assignment 3",
         max_score=70,
         deadline_full=datetime.now() + timedelta(days=2)
     )
     submission3 = Submission(
-        assignment_id=203,
+        assignment_id=204,
         student_github_username="stud_github",
         student_telegram_id=8,
         is_submitted=True,
@@ -405,3 +442,148 @@ async def test_get_student_assignment_details(async_session: AsyncSession):
             assignment_id=201,
             session=async_session
         )
+
+
+@pytest.mark.asyncio
+async def test_get_manual_check_submissions_summary_as_teacher(async_session):
+    teacher_id = 6
+    result = await get_manual_check_submissions_summary(
+        telegram_id=teacher_id,
+        session=async_session
+    )
+    assert len(result) == 1
+    assert result[0]["full_name"] == "student_user"
+    assert result[0]["assignment"] == "Manual Assignment"
+    assert result[0]["github_username"] == "stud_github"
+    assert result[0]["submitted_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_get_manual_check_submissions_summary_with_course_filter(async_session):
+    teacher_id = 6
+    course_id = 101
+    result = await get_manual_check_submissions_summary(
+        telegram_id=teacher_id,
+        course_id=course_id,
+        session=async_session
+    )
+    assert len(result) == 1
+    assert result[0]["course"] == "Course 101"
+    empty_result = await get_manual_check_submissions_summary(
+        telegram_id=teacher_id,
+        course_id=999,
+        session=async_session
+    )
+    assert len(empty_result) == 0
+
+@pytest.mark.asyncio
+async def test_get_teacher_deadline_notification_payload(async_session):
+    payload = await get_teacher_deadline_notification_payload(
+        teacher_telegram_id=6,
+        assignment_id=202,
+        session=async_session
+    )
+
+    assert payload is not None
+    assert payload["assignment_id"] == 202
+    assert payload["course_id"] == 101
+    assert payload["assignment"] == "Assignment 2"
+    assert payload["course_name"] == "Course 101"
+    assert isinstance(payload["deadline"], datetime)
+    assert payload["not_submitted_count"] >= 1
+    assert isinstance(payload["not_submitted_students"], list)
+
+
+@pytest.mark.asyncio
+async def test_add_and_remove_course_assistant(async_session):
+    await add_course_assistant(
+        teacher_telegram_id=6,
+        course_id=101,
+        assistant_telegram_username="student_user",
+        session=async_session
+    )
+
+    res = await async_session.execute(
+        select(Assistant).where(
+        Assistant.telegram_id == 8,
+            Assistant.course_id == 101
+        )
+    )
+    assistant = res.scalar_one_or_none()
+    assert assistant is not None
+
+    await remove_course_assistant(
+        teacher_telegram_id=6,
+        course_id=101,
+        assistant_telegram_username="student_user",
+        session=async_session
+    )
+
+    res = await async_session.execute(
+        select(Assistant).where(
+            Assistant.telegram_id == 8,
+            Assistant.course_id == 101
+        )
+    )
+    assistant = res.scalar_one_or_none()
+    assert assistant is None
+
+
+@pytest.mark.asyncio
+async def test_create_course_announcement(async_session):
+    students = await create_course_announcement(
+        teacher_telegram_id=6,
+        course_id=101,
+        session=async_session
+    )
+    assert 8 in students
+
+
+@pytest.mark.asyncio
+async def test_trigger_manual_sync_various_counts(async_session):
+    teacher_new = User(
+        telegram_id=1123,
+        telegram_username="new_teacher",
+        sync_count=0
+    )
+    async_session.add(teacher_new)
+
+    target_user = await async_session.get(User, 7)
+    target_user.sync_count = 3
+    await async_session.commit()
+    patch_path = "commands.teacher_and_assistant_commands._check_permission"
+    with patch(patch_path) as mock_check:
+        success = await trigger_manual_sync_for_teacher(1123, session=async_session)
+        assert success is True
+        updated_teacher = await async_session.get(User, 1123)
+        assert updated_teacher.sync_count == 1
+        mock_check.assert_not_called()
+    with patch(patch_path) as mock_check:
+        mock_check.side_effect = AccessDenied("Not an admin")
+        with pytest.raises(ValueError, match="Вы сделали больше 3 обновлений"):
+            await trigger_manual_sync_for_teacher(7, session=async_session)
+        user_after_fail = await async_session.get(User, 7)
+        assert user_after_fail.sync_count == 3
+    with patch(patch_path) as mock_check:
+        mock_check.return_value = None
+        success = await trigger_manual_sync_for_teacher(7, session=async_session)
+        assert success is True
+        user_final = await async_session.get(User, 7)
+        assert user_final.sync_count == 4
+
+
+@pytest.mark.asyncio
+async def test_select_manual_check_assignment_all_cases(async_session):
+    with pytest.raises(ValueError, match="Задание не выбрано"):
+        await select_manual_check_assignment(None, async_session)
+
+    with pytest.raises(ValueError, match="Выбранное задание отсутствует"):
+        await select_manual_check_assignment(999, async_session)
+
+    target_id = 201
+    await select_manual_check_assignment(target_id, async_session)
+
+    async_session.expire_all()
+    updated = await async_session.get(Assignment, target_id)
+
+    assert updated.grading_mode == 'manual'
