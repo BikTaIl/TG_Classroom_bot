@@ -569,11 +569,6 @@ async def remove_course_assistant(
     if not existing_assistant:
         raise ValueError("Ассистент уже добавлен в этот курс")
 
-    new_assistant = Assistant(
-        telegram_id=assistant.telegram_id,
-        course_id=course_id
-    )
-    session.add(new_assistant)
     stmt = delete(Assistant).where(Assistant.telegram_id == assistant.telegram_id)
     await session.execute(stmt)
     await session.commit()
@@ -606,7 +601,7 @@ async def trigger_manual_sync_for_teacher(
         raise ValueError(f"У {teacher_telegram_id} некорректное поле sync_count.")
     if user.sync_count >= 3:
         try:
-            await _check_permission(teacher_telegram_id, ['admin'], 0, session)
+            await _check_permission(teacher_telegram_id, ['admin', 'teacher'], 0, session)
         except AccessDenied:
             raise ValueError(f"Вы сделали больше 3 обновлений")
     user.sync_count += 1
@@ -687,4 +682,5 @@ async def find_assignments_by_course_id(
         raise ValueError('Курс не выбран')
     assignments_query = await session.execute(
         select(Assignment.github_assignment_id, Assignment.title).where(Assignment.classroom_id == course_id))
-    return  [tuple(row) for row in assignments_query.all()]
+    return [tuple(row) for row in assignments_query.all()]
+

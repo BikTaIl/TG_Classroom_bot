@@ -16,7 +16,8 @@ from models.db import (
     Notification,
     Course,
     Assignment,
-    Submission
+    Submission,
+    Assistant
 )
 from commands.common_commands import (
     create_user,
@@ -47,8 +48,9 @@ from commands.student_commands import (
     remove_student_notification_rule,
     get_student_assignment_details
 )
+from commands.teacher_and_assistant_commands import *
 
-DATABASE_URL = "postgresql+asyncpg://bot_admin@localhost:5433/testdb"
+DATABASE_URL = "postgresql+asyncpg://bot_admin:5670@localhost/testdb"
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -66,6 +68,12 @@ async def async_session():
             telegram_id=8,
             telegram_username="student_user",
             active_github_username="stud_github",
+            notifications_enabled=True
+        )
+        student2 = User(
+            telegram_id=9,
+            telegram_username="student_user_2",
+            active_github_username="stud_github_2",
             notifications_enabled=True
         )
         org = GitOrganization(organization_name="Org1", teacher_telegram_id=6)
@@ -98,9 +106,10 @@ async def async_session():
             student_telegram_id=8,
             is_submitted=False
         )
+        #мб еще отправленное но не оценное задание
         notification1 = Notification(telegram_id=8, notification_time=24)
         notification2 = Notification(telegram_id=8, notification_time=3)
-        session.add_all([admin, target, student, permission])
+        session.add_all([admin, target, student, student2, permission])
         await session.flush()
         session.add(org)
         await session.flush()
@@ -123,6 +132,14 @@ async def test_create_user(async_session):
     assert user.active_role is None
     assert user.sync_count == 0
     assert user.notifications_enabled is True
+    assert user.banned is False
+
+
+@pytest.mark.asyncio
+async def test_create_user_existing(async_session):
+    await create_user(1, "testuser", async_session)
+    with pytest.raises(ValueError):
+        await create_user(1, "testuser", async_session)
 
 
 @pytest.mark.asyncio
@@ -138,6 +155,12 @@ async def test_set_active_role(async_session):
 
     with pytest.raises(AccessDenied):
         await set_active_role(2, "teacher", async_session)
+
+    with pytest.raises(AccessDenied):
+        await set_active_role(2, "assistant", async_session)
+
+    with pytest.raises(AccessDenied):
+        await set_active_role(2, "admin", async_session)
 
     with pytest.raises(ValueError):
         await set_active_role(2, "invalid_role", async_session)
@@ -171,10 +194,22 @@ async def test_change_git_account(async_session):
     await change_git_account(4, "gitlogin", async_session)
     updated_user = await async_session.get(User, 4)
     assert updated_user.active_github_username == "gitlogin"
-
     with pytest.raises(ValueError):
         await change_git_account(4, "wronglogin", async_session)
 
+@pytest.mark.asyncio
+async def test_change_to_denied_git_account(async_session):
+    user1 = User(telegram_id=4, telegram_username="gituser")
+    git1 = GithubAccount(github_username="gitlogin", user_telegram_id=4)
+    user2 = User(telegram_id=5, telegram_username="gituser2")
+    async_session.add_all([user1, git1])
+    async_session.add_all([user2])
+    await async_session.commit()
+    await change_git_account(4, "gitlogin", async_session)
+    updated_user = await async_session.get(User, 4)
+    assert updated_user.active_github_username == "gitlogin"
+    with pytest.raises(ValueError):
+        await change_git_account(5, "gitlogin", async_session)
 
 @pytest.mark.asyncio
 async def test_enter_name(async_session):
@@ -213,13 +248,24 @@ async def test_revoke_teacher_role(async_session):
 
 
 @pytest.mark.asyncio
+async def test_revoke_teacher_role_if_not_exist(async_session):
+    with pytest.raises(ValueError):
+        await revoke_teacher_role(6, "target_user", async_session)
+
+
+@pytest.mark.asyncio
 async def test_ban_unban_user(async_session):
     await ban_user(6, "target_user", async_session)
     user_stmt = select(User).where(User.telegram_id == 7)
     res = await async_session.execute(user_stmt)
     target = res.scalar_one()
     assert target.banned is True
-
+    with pytest.raises(AccessDenied, match="забанен"):
+        await grant_teacher_role(target.telegram_id, "target_user", async_session)
+    with pytest.raises(AccessDenied, match="забанен"):
+        await get_classroom_users_without_bot_accounts(target.telegram_id, 101, async_session)
+    with pytest.raises(AccessDenied, match="забанен"):
+        await get_teacher_deadline_notification_payload(target.telegram_id, 201, async_session)
     await unban_user(6, "target_user", async_session)
     res = await async_session.execute(user_stmt)
     target = res.scalar_one()
@@ -359,6 +405,8 @@ async def test_get_student_grades_summary_multiple_courses(async_session: AsyncS
     titles = [g['assignment'] for g in grades]
     assert "Assignment 1" in titles
     assert "Assignment 3" in titles
+    assert "Assignment 2" not in titles
+
 
 @pytest.mark.asyncio
 async def test_get_student_grades_summary_no_score(async_session: AsyncSession):
@@ -405,3 +453,183 @@ async def test_get_student_assignment_details(async_session: AsyncSession):
             assignment_id=201,
             session=async_session
         )
+
+
+@pytest.mark.asyncio
+async def test_find_assignments_by_course_id_success(async_session):
+    """Успешное получение списка заданий по ID курса"""
+    assignments = await find_assignments_by_course_id(101, async_session)
+    assert len(assignments) == 2
+    assignment_ids = [assignment[0] for assignment in assignments]
+    assignment_titles = [assignment[1] for assignment in assignments]
+    assert 201 in assignment_ids
+    assert 202 in assignment_ids
+    assert "Assignment 1" in assignment_titles
+    assert "Assignment 2" in assignment_titles
+
+
+@pytest.mark.asyncio
+async def test_find_assignments_by_course_id_none(async_session):
+    """Получение заданий с None в качестве course_id"""
+    with pytest.raises(ValueError, match="Курс не выбран"):
+        await find_assignments_by_course_id(None, async_session)
+
+
+@pytest.mark.asyncio
+async def test_find_assignments_by_course_id_empty(async_session):
+    """Получение заданий для курса без заданий"""
+    org = await async_session.get(GitOrganization, "Org1")
+    empty_course = Course(classroom_id=999, name="Empty Course", organization_name=org.organization_name)
+    async_session.add(empty_course)
+    await async_session.commit()
+
+    assignments = await find_assignments_by_course_id(999, async_session)
+    assert assignments == []
+
+
+@pytest.mark.asyncio
+async def test_find_assignments_by_course_id_not_exist(async_session):
+    """Получение заданий для несуществующего курса"""
+    assignments = await find_assignments_by_course_id(99999, async_session)
+    assert assignments == []
+
+
+@pytest.mark.asyncio
+async def test_find_assistants_courses_success(async_session):
+    """Успешное получение списка курсов ассистента"""
+    ass_user = User(telegram_id=200)
+    async_session.add(ass_user)
+    assistant = Assistant(telegram_id=200, course_id=101)
+    async_session.add(assistant)
+    await async_session.commit()
+
+    courses = await find_assistants_courses(200, async_session)
+    assert len(courses) == 1
+    assert courses[0][0] == 101
+    assert courses[0][1] == "Course 101"
+
+
+@pytest.mark.asyncio
+async def test_find_assistants_courses_multiple(async_session):
+    """Получение списка курсов ассистента с несколькими курсами"""
+    org = await async_session.get(GitOrganization, "Org1")
+    course2 = Course(classroom_id=102, name="Course 102", organization_name=org.organization_name)
+    async_session.add(course2)
+    await async_session.commit()
+    ass_user = User(telegram_id=200)
+    async_session.add(ass_user)
+    assistant = Assistant(telegram_id=200, course_id=101)
+    assistant2 = Assistant(telegram_id=200, course_id=102)
+    async_session.add_all([assistant, assistant2])
+    await async_session.commit()
+
+    courses = await find_assistants_courses(200, async_session)
+    assert len(courses) == 2
+    course_ids = [course[0] for course in courses]
+    assert 101 in course_ids
+    assert 102 in course_ids
+
+
+@pytest.mark.asyncio
+async def test_find_assistants_courses_no_assistant(async_session):
+    """Получение курсов для несуществующего ассистента"""
+
+    courses = await find_assistants_courses(999, async_session)
+    assert courses == []
+
+
+@pytest.mark.asyncio
+async def test_find_teachers_courses_success(async_session):
+    """Успешное получение списка курсов учителя"""
+    courses = await find_teachers_courses(6, async_session)
+    assert len(courses) == 1
+    assert courses[0][0] == 101
+    assert courses[0][1] == "Course 101"
+
+
+@pytest.mark.asyncio
+async def test_find_teachers_courses_multiple(async_session):
+    """Получение списка курсов учителя с несколькими курсами"""
+    org = await async_session.get(GitOrganization, "Org1")
+    course2 = Course(classroom_id=102, name="Course 102", organization_name=org.organization_name)
+    async_session.add(course2)
+    await async_session.commit()
+
+    courses = await find_teachers_courses(6, async_session)
+    assert len(courses) == 2
+    course_ids = [course[0] for course in courses]
+    course_names = [course[1] for course in courses]
+    assert 101 in course_ids
+    assert 102 in course_ids
+    assert "Course 101" in course_names
+    assert "Course 102" in course_names
+
+
+@pytest.mark.asyncio
+async def test_find_teachers_courses_no_organization(async_session):
+    """Получение курсов учителя без организации"""
+    new_teacher = User(telegram_id=100, telegram_username="no_org_teacher")
+    async_session.add(new_teacher)
+    await async_session.commit()
+
+    with pytest.raises(ValueError, match="Учитель не привязан к организации"):
+        await find_teachers_courses(100, async_session)
+
+
+@pytest.mark.asyncio
+async def test_find_assignment_success(async_session):
+    """Успешный поиск задания по названию в курсе"""
+    assignment_id = await find_assignment(101, "Assignment 1", async_session)
+    assert assignment_id == 201
+
+
+@pytest.mark.asyncio
+async def test_find_assignment_not_found(async_session):
+    """Поиск несуществующего задания в курсе"""
+    with pytest.raises(ValueError, match="Задания с таким именем в данном курсе нет"):
+        await find_assignment(101, "Nonexistent Assignment", async_session)
+
+
+@pytest.mark.asyncio
+async def test_find_assignment_different_course(async_session):
+    """Поиск задания, существующего в другом курсе"""
+    org = await async_session.get(GitOrganization, "Org1")
+    course2 = Course(classroom_id=102, name="Course 102", organization_name=org.organization_name)
+    assignment3 = Assignment(
+        github_assignment_id=203,
+        classroom_id=102,
+        title="Assignment 3",
+        max_score=70,
+        deadline_full=datetime.now() + timedelta(days=2)
+    )
+    async_session.add_all([course2, assignment3])
+    await async_session.commit()
+
+    with pytest.raises(ValueError, match="Задания с таким именем в данном курсе нет"):
+        await find_assignment(101, "Assignment 3", async_session)
+
+
+@pytest.mark.asyncio
+async def test_find_course_success(async_session):
+    """Успешный поиск курса по названию"""
+    course_id = await find_course(6, "Course 101", async_session)
+    assert course_id == 101
+
+
+@pytest.mark.asyncio
+async def test_find_course_teacher_without_organization(async_session):
+    """Поиск курса учителем без привязанной организации"""
+    new_teacher = User(telegram_id=100, telegram_username="no_org_teacher")
+    async_session.add(new_teacher)
+    await async_session.commit()
+
+    with pytest.raises(ValueError, match="Учитель не привязан к организации"):
+        await find_course(100, "Course 101", async_session)
+
+
+@pytest.mark.asyncio
+async def test_find_course_not_found(async_session):
+    """Поиск несуществующего курса"""
+    with pytest.raises(ValueError, match="Курса с таким названием нет"):
+        await find_course(6, "Nonexistent Course", async_session)
+
