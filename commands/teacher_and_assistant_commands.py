@@ -299,6 +299,10 @@ async def get_tasks_to_grade_summary(
         session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
     """Сводка по задачам, которые нужно оценить. Сортировка по дд и названию курса"""
+    org_query = await session.execute(
+        select(GitOrganization.organization_name).where(GitOrganization.teacher_telegram_id == telegram_id))
+    org = org_query.scalar_one_or_none()
+
     query = select(
         Assignment.title,
         Assignment.deadline_full,
@@ -313,7 +317,7 @@ async def get_tasks_to_grade_summary(
         and_(
             Assignment.deadline_full < datetime.now(),
             or_(
-                Course.teacher_telegram_id == telegram_id,
+                Course.organization_name == org,
                 Assistant.telegram_id == telegram_id
             )
         )
