@@ -33,7 +33,8 @@ async def _check_permission(telegram_id: int, key_roles: list[str], course_id: i
         if teacher is None or course_query is None:
             raise ValueError(f"Недостаточно прав.")
     elif role == 'assistant' and 'assistant' in key_roles:
-        assistant_query = select(Assistant).where(Assistant.course_id == course_id, Assistant.telegram_id == telegram_id)
+        assistant_query = select(Assistant).where(Assistant.course_id == course_id,
+                                                  Assistant.telegram_id == telegram_id)
         assistant = await session.execute(assistant_query)
         if not assistant:
             raise ValueError("Недостаточно прав.")
@@ -52,7 +53,7 @@ async def get_course_students_overview(
     await _check_permission(telegram_id, ['teacher', 'assistant', 'admin'], course_id, session)
 
     course_students_subq = select(
-        distinct(Submission.student_telegram_id)
+        distinct(Submission.student_telegram_id).label("student_telegram_id")
     ).join(
         Assignment, Assignment.github_assignment_id == Submission.assignment_id
     ).where(
@@ -103,7 +104,7 @@ async def get_course_students_overview(
         ).where(Assignment.classroom_id == course_id)
 
         all_assignments_result = await session.execute(all_assignments_query)
-        all_assignments = {a.id: a.title for a in all_assignments_result.all()}
+        all_assignments = {a.github_assignment_id: a.title for a in all_assignments_result.all()}
 
         submitted_query = select(
             Submission.student_telegram_id,
@@ -148,7 +149,6 @@ async def get_course_students_overview(
             "not_submitted_assignments": not_submitted,
             "not_submitted_count": len(not_submitted)
         })
-
     return overview
 
 
@@ -194,6 +194,7 @@ async def get_assignment_students_status(
             "status": status,
             "grade": row.score if row.score is not None else None
         })
+    return overview
 
 
 async def get_classroom_users_without_bot_accounts(
@@ -205,20 +206,8 @@ async def get_classroom_users_without_bot_accounts(
     await _check_permission(telegram_id, ['teacher', 'assistant', 'admin'], course_id, session)
     query = select(
         distinct(Submission.student_github_username)
-    ).select_from(Submission).join(
-        Assignment, Assignment.github_assignment_id == Submission.assignment_id
-    ).where(
-        and_(
-            Assignment.classroom_id == course_id,
-            Submission.student_github_username.is_not(None),
-            Submission.student_github_username.not_in(
-                select(User.active_github_username).where(
-                    User.active_github_username.is_not(None)
-                )
-            )
-        )
-    )
-
+    ).join(Assignment, Assignment.github_assignment_id == Submission.assignment_id).where(
+        Submission.student_telegram_id == None, Assignment.classroom_id == course_id)
     result = await session.execute(query)
     return result.scalars().all()
 
@@ -590,7 +579,6 @@ async def remove_course_assistant(
 async def create_course_announcement(
         teacher_telegram_id: int,
         course_id: int,
-        text: str,
         session: AsyncSession = None
 ) -> Sequence[int]:
     """Возвращает список студентов, которым надо разослать объявления"""
@@ -612,7 +600,6 @@ async def trigger_manual_sync_for_teacher(
     if not user:
         raise ValueError(f"Пользователя {teacher_telegram_id} не существует.")
     if user.sync_count is None or user.sync_count < 0:
-        print(user.sync_count)
         raise ValueError(f"У {teacher_telegram_id} некорректное поле sync_count.")
     if user.sync_count >= 3:
         try:

@@ -12,7 +12,7 @@ from commands.common_commands import (
     enter_name,
 )
 
-DATABASE_URL = "postgresql+asyncpg://molonovboris@localhost:5432/testdb"
+DATABASE_URL = "postgresql+asyncpg://bot_admin@localhost:5433/testdb"
 
 
 @pytest_asyncio.fixture(scope="function")

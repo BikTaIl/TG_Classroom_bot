@@ -132,6 +132,7 @@ class Submission(Base):
     student_github_username = Column(String)
     student_telegram_id = Column(BigInteger)
     repo_url = Column(String)
+    submitted_at = Column(TIMESTAMP)
     is_submitted = Column(Boolean)
     score = Column(Numeric)
     created_at = Column(

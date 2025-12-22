@@ -76,7 +76,6 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
     try:
         async with AsyncSessionLocal() as session:
             overview = await get_course_students_overview(cb.from_user.id, course_id, session)
-            print(overview)
         await cb.message.answer(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())
