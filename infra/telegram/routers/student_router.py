@@ -43,6 +43,8 @@ async def process_set_student_active_course_second(message: Message, state: FSMC
         await message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 
 @student_router.callback_query(F.data == "get_student_notification_rules")
@@ -89,6 +91,8 @@ async def process_add_student_notification_rule_second(message: Message, state: 
         await state.clear()
     except TypeError:
         await message.answer("Неправильный формат сообщения. Попробуйте еще раз и введите число", reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 
 @student_router.callback_query(F.data == "remove_student_notification_rule")
@@ -119,6 +123,8 @@ async def process_remove_student_notification_rule_second(message: Message, stat
         await state.clear()
     except TypeError:
         await message.answer("Неправильный формат сообщения. Попробуйте еще раз и введите число", reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
 
 
 @student_router.callback_query(F.data == "reset_student_notification_rules_to_default")
