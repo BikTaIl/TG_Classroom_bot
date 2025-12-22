@@ -221,6 +221,10 @@ async def get_course_deadlines_overview(
         session: AsyncSession = None
 ) -> Sequence[Mapping[str, Any]]:
     """Сводка всех дедлайнов. Сортировка по дд"""
+    org_query = await session.execute(
+        select(GitOrganization.organization_name).where(GitOrganization.teacher_telegram_id == telegram_id))
+    org = org_query.scalar_one_or_none()
+
     query = select(
         Assignment.github_assignment_id,
         Assignment.title,
@@ -240,7 +244,7 @@ async def get_course_deadlines_overview(
         )
     ).where(
         or_(
-            Course.teacher_telegram_id == telegram_id,
+            Course.organization_name == org,
             Assistant.telegram_id == telegram_id
         )
     ).group_by(
@@ -255,12 +259,12 @@ async def get_course_deadlines_overview(
         query = query.where(Course.classroom_id == course_id)
 
     result = await session.execute(query)
-    assignments = result.all()
+    assignments = result.mappings().all()
 
     if not assignments:
         return []
 
-    assignment_ids = [a.id for a in assignments]
+    assignment_ids = [a["github_assignment_id"] for a in assignments]
 
     submissions_query = select(
         Submission.assignment_id,
