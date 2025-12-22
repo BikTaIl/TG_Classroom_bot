@@ -56,7 +56,14 @@ from commands.teacher_and_assistant_commands import (
     add_course_assistant,
     create_course_announcement,
     trigger_manual_sync_for_teacher,
-    select_manual_check_assignment
+    select_manual_check_assignment,
+    _get_user_by_username,
+    _check_permission,
+    get_course_students_overview,
+    get_assignment_students_status,
+    get_classroom_users_without_bot_accounts,
+    get_course_deadlines_overview,
+    get_tasks_to_grade_summary
 )
 
 
@@ -587,3 +594,159 @@ async def test_select_manual_check_assignment_all_cases(async_session):
     updated = await async_session.get(Assignment, target_id)
 
     assert updated.grading_mode == 'manual'
+
+
+# _get_user_by_username
+@pytest.mark.asyncio
+async def test__get_user_by_username_found(async_session):
+    user = await _get_user_by_username("student_user", async_session)
+    assert user is not None
+    assert user.telegram_id == 8
+
+
+@pytest.mark.asyncio
+async def test__get_user_by_username_not_found(async_session):
+    user = await _get_user_by_username("unknown_user", async_session)
+    assert user is None
+
+
+#_check_permission
+@pytest.mark.asyncio
+async def test__check_permission_admin_allowed(async_session):
+    await _check_permission(6, ["teacher", "assistant", "admin"], 101, async_session)
+
+
+@pytest.mark.asyncio
+async def test__check_permission_user_not_found(async_session):
+    with pytest.raises(ValueError):
+        await _check_permission(999, ["admin"], 101, async_session)
+
+
+@pytest.mark.asyncio
+async def test__check_permission_banned(async_session):
+    user = await async_session.get(User, 8)
+    user.banned = True
+    await async_session.commit()
+
+    with pytest.raises(AccessDenied):
+        await _check_permission(8, ["student"], 101, async_session)
+
+
+#get_course_students_overview
+@pytest.mark.asyncio
+async def test_get_course_students_overview_teacher(async_session):
+    overview = await get_course_students_overview(
+        telegram_id=6,
+        course_id=101,
+        session=async_session
+    )
+
+    assert len(overview) == 1
+    student = overview[0]
+
+    assert student["github_username"] == "stud_github"
+    assert student["avg_score"] == 90.0
+    assert student["not_submitted_count"] == 1
+    assert "Assignment 2" in student["not_submitted_assignments"]
+
+
+#get_assignment_students_status
+@pytest.mark.asyncio
+async def test_get_assignment_students_status(async_session):
+    result = await get_assignment_students_status(
+        telegram_id=6,
+        assignment_id=201,
+        session=async_session
+    )
+
+    assert len(result) == 1
+    row = result[0]
+
+    assert row["title"] == "Assignment 1"
+    assert row["status"] == "оценено"
+    assert row["grade"] == 90
+
+
+@pytest.mark.asyncio
+async def test_get_assignment_students_status_not_submitted(async_session):
+    result = await get_assignment_students_status(
+        telegram_id=6,
+        assignment_id=202,
+        session=async_session
+    )
+
+    assert result[0]["status"] == "не сдано"
+    assert result[0]["grade"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_assignment_students_status_no_assignment(async_session):
+    result = await get_assignment_students_status(
+        telegram_id=6,
+        assignment_id=None,
+        session=async_session
+    )
+    assert result == []
+
+
+#get_classroom_users_without_bot_accounts
+@pytest.mark.asyncio
+async def test_get_classroom_users_without_bot_accounts(async_session):
+    submission = Submission(
+        assignment_id=201,
+        student_github_username="ghost_user",
+        student_telegram_id=None,
+        is_submitted=True
+    )
+    async_session.add(submission)
+    await async_session.commit()
+
+    users = await get_classroom_users_without_bot_accounts(
+        telegram_id=6,
+        course_id=101,
+        session=async_session
+    )
+
+    assert "ghost_user" in users
+
+
+#get_course_deadlines_overview
+@pytest.mark.asyncio
+async def test_get_course_deadlines_overview(async_session):
+    overview = await get_course_deadlines_overview(
+        telegram_id=6,
+        course_id=101,
+        session=async_session
+    )
+
+    assert len(overview) == 2
+
+    titles = [o["assignment"] for o in overview]
+    assert "Assignment 1" in titles
+    assert "Assignment 2" in titles
+
+    overdue = next(o for o in overview if o["assignment"] == "Assignment 2")
+    assert overdue["submitted_count"] == 0
+
+
+#get_tasks_to_grade_summary
+@pytest.mark.asyncio
+async def test_get_tasks_to_grade_summary(async_session: AsyncSession):
+    summary = await get_tasks_to_grade_summary(
+        telegram_id=6,
+        course_id=101,
+        session=async_session
+    )
+
+    assert len(summary) == 1
+
+    task = summary[0]
+
+    assert task["assignment"] == "Assignment 2"
+    assert task["course"] == "Course 101"
+
+    assert task["total_submissions"] == 1
+    assert task["graded_count"] == 0
+    assert task["to_grade_count"] == 1
+
+    assert task["deadline"] < datetime.now()
