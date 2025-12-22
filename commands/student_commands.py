@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Mapping, Any
+from typing import Optional, Sequence, Mapping, Any, Row
 from datetime import datetime, date
 from sqlalchemy import select, update, delete, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -267,3 +267,20 @@ async def submit_course_feedback(
     if not course.scalar_one():
         raise ValueError(f"Курса {course_id} не существует.")
     return course.scalar_one()
+
+
+async def find_students_courses(
+        student_telegram_id: int,
+        session: AsyncSession
+) -> Sequence[Row[tuple[int, str]]]:
+    """Вытягивает по айди студента курсы, где он является учеником (есть сабмиты)"""
+    user_query = await session.execute(select(User).where(User.telegram_id == student_telegram_id))
+    user = user_query.scalar_one_or_none()
+    course_query = await session.execute(
+        select(Course.classroom_id, Course.name)
+        .join(Assignment, Assignment.classroom_id == Course.classroom_id)
+        .join(Submission, Submission.assignment_id == Assignment.github_assignment_id)
+        .where(Submission.student_github_username == user.active_github_username)
+        .distinct()
+    )
+    return [tuple(row) for row in course_query.all()]

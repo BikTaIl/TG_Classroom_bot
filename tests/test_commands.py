@@ -19,6 +19,7 @@ DATABASE_URL = "postgresql+asyncpg://bot_admin@localhost:5433/testdb"
 async def async_session():
     engine = create_async_engine(DATABASE_URL, echo=False)
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     async_session_maker = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     async with async_session_maker() as session:

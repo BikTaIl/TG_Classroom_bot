@@ -22,7 +22,7 @@ async def admin_panel(cb: CallbackQuery):
 async def process_set_student_active_course_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции set_student_active_course"""
     await state.set_state(ChangeCourse.waiting_course_name)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Введите название желаемого курса или '-', если хотите сбросить курс"
     )
     await cb.answer()
@@ -54,11 +54,11 @@ async def process_get_student_notification_rules(cb: CallbackQuery, state: FSMCo
         answer = ""
         for i in range(len(rules)):
             answer += f"Дедлайн {i + 1} наступает за {rules[i]} часов до сдачи \n"
-        await cb.message.update_text(answer, reply_markup=return_to_the_menu())
+        await cb.message.edit_text(answer, reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -66,7 +66,7 @@ async def process_get_student_notification_rules(cb: CallbackQuery, state: FSMCo
 async def process_add_student_notification_rule_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции add_student_notification_rule"""
     await state.set_state(NewDeadline.waiting_hours)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Введите количество часов, за которое хотите получить уведомление о дедлайне:"
     )
     await cb.answer()
@@ -95,7 +95,7 @@ async def process_add_student_notification_rule_second(message: Message, state: 
 async def process_remove_student_notification_rule_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции remove_student_notification_rule"""
     await state.set_state(RemoveDeadline.waiting_hours)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Введите количество часов, за которое перед дедлайном стоит уведомление, необходимое к удалению:"
     )
     await cb.answer()
@@ -126,7 +126,7 @@ async def process_reset_student_notification_rules_to_default(cb: CallbackQuery,
     """Запуск по кнопке функции reset_student_notification_rules_to_default"""
     async with AsyncSessionLocal() as session:
         await reset_student_notification_rules_to_default(cb.from_user.id, session)
-    await cb.message.update_text("Настройки уведомлений успешно сброшены!", reply_markup=return_to_the_menu())
+    await cb.message.edit_text("Настройки уведомлений успешно сброшены!", reply_markup=return_to_the_menu())
     await cb.answer()
 
 
@@ -139,11 +139,11 @@ async def process_get_student_active_assignments_summary(cb: CallbackQuery, stat
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             result = await table_to_text(await get_student_active_assignments_summary(cb.from_user.id, course_id, session))
-        await cb.message.update_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -158,11 +158,11 @@ async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, sta
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             result = await get_student_overdue_assignments_summary(cb.from_user.id, course_id,  session)
-        await cb.message.update_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -176,11 +176,11 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
         async with AsyncSessionLocal() as session:
             course_id = await find_course(cb.from_user.id, course_name, session)
             result = await get_student_grades_summary(cb.from_user.id, course_id, session)
-        await cb.message.update_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -195,11 +195,11 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
         async with AsyncSessionLocal() as session:
             assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
             result = await get_student_grades_summary(cb.from_user.id, assignment_id, session)
-        await cb.message.update_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -208,7 +208,7 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
 async def process_submit_course_feedback_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции submit_course_feedback"""
     await state.set_state(SendMessage.waiting_message)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Введите сообщение, которое хотите отправить:"
     )
     await cb.answer()

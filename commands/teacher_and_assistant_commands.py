@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Mapping, Any
+from typing import Optional, Sequence, Mapping, Any, Row
 from datetime import datetime, date
 from sqlalchemy import select, update, delete, and_, or_, func, case, distinct, true
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -618,7 +618,7 @@ async def find_course(
 ) -> int:
     """Находит айди курса по айди учителя и названию курса"""
     org_query = await session.execute(
-        select(GitOrganization.name).where(GitOrganization.teacher_telegram_id == teacher_telegram_id))
+        select(GitOrganization.organization_name).where(GitOrganization.teacher_telegram_id == teacher_telegram_id))
     organization = org_query.scalar_one_or_none()
     if organization is None:
         raise ValueError('Учитель не привязан к организации')
@@ -647,3 +647,39 @@ async def find_assignment(
     if assignment_id is None:
         raise ValueError('Задания с таким именем в данном курсе нет')
     return assignment_id
+
+
+async def find_teachers_courses(
+        teacher_telegram_id: int,
+        session: AsyncSession
+) -> Sequence[Row[tuple[int, str]]]:
+    """По айди учителя вытаскивает список курсов (айди и имена), которыми он владеет"""
+    org_query = await session.execute(
+        select(GitOrganization.organization_name).where(GitOrganization.teacher_telegram_id == teacher_telegram_id))
+    organization = org_query.scalar_one_or_none()
+    if organization is None:
+        raise ValueError('Учитель не привязан к организации')
+    course_query = await session.execute(select(Course.classroom_id, Course.name).where(
+        Course.organization_name == organization
+    ))
+    return [tuple(row) for row in course_query.all()]
+
+
+async def find_assistants_courses(
+        assistant_telegram_id: int,
+        session: AsyncSession
+) -> Sequence[Row[tuple[int, str]]]:
+    """По айди ассистента вытаскивает список курсов (айди и имена), к которым он прикреплен"""
+    courses_query = await session.execute(select(Assistant.course_id, Course.name
+                                                 ).join(Course, Assistant.course_id == Course.classroom_id
+                                                        ).where(Assistant.telegram_id == assistant_telegram_id))
+    return [tuple(row) for row in courses_query.all()]
+
+
+async def find_assignments_by_course_id(
+        course_id: int,
+        session: AsyncSession
+) -> Sequence[Row[tuple[int, str]]]:
+    assignments_query = await session.execute(
+        select(Assignment.github_assignment_id, Assignment.title).where(Assignment.classroom_id == course_id))
+    return  [tuple(row) for row in assignments_query.all()]

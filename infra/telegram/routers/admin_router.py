@@ -22,7 +22,7 @@ async def admin_panel(cb: CallbackQuery):
 async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции grant_teacher_role"""
     await state.set_state(AddTeacher.waiting_course_name)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Пришли название организации, в которую ты хочешь добавить учителя."
     )
     await cb.answer()
@@ -62,7 +62,7 @@ async def process_grant_teacher_role_third(message: Message, state: FSMContext):
 async def process_revoke_teacher_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции revoke_teacher_role"""
     await state.set_state(RemoveTeacher.waiting_username)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Пришли tg username учителя в формате @username (или просто username)."
     )
     await cb.answer()
@@ -86,7 +86,7 @@ async def process_revoke_teacher_role_second(message: Message, state: FSMContext
 async def process_ban_user_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции ban_user"""
     await state.set_state(Ban.waiting_username)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Пришли tg username пользователя в формате @username (или просто username)."
     )
     await cb.answer()
@@ -110,7 +110,7 @@ async def process_ban_user_second(message: Message, state: FSMContext):
 async def process_unban_user_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции unban_user"""
     await state.set_state(Unban.waiting_username)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Пришли tg username пользователя в формате @username (или просто username)."
     )
     await cb.answer()
@@ -134,7 +134,7 @@ async def process_unban_user_second(message: Message, state: FSMContext):
 async def process_get_error_count_for_day_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_error_count_for_day"""
     await state.set_state(FindErrors.waiting_date)
-    await cb.message.update_text(
+    await cb.message.edit_text(
         "Пришли дату, для которой хочешь узнать сводку в формате ГГГГ-ММ-ДД, или напиши '-' для общей сводки"
     )
     await cb.answer()
@@ -163,13 +163,13 @@ async def process_get_last_successful_github_call_time(cb: CallbackQuery, state:
         async with AsyncSessionLocal() as session:
             answer = await get_last_successful_github_call_time(cb.from_user.id, session)
         if answer:
-            await cb.message.update_text(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
+            await cb.message.edit_text(f"Последнее успешное обращение к GitHub было {answer}", reply_markup=return_to_the_menu())
         else:
-            await cb.message.update_text("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
+            await cb.message.edit_text("Успешных обращений к GitHub не было", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
 
@@ -180,12 +180,12 @@ async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSM
         async with AsyncSessionLocal() as session:
             answer = await get_last_failed_github_call_info(cb.from_user.id, session)
         if answer:
-            await cb.message.update_text(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
+            await cb.message.edit_text(f"Информация о последнем ошибочном обращении к GitHub: {table_to_text(answer)}", reply_markup=return_to_the_menu())
         else:
-            await cb.message.update_text("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
+            await cb.message.edit_text("Ошибочных обращений к GitHub не было", reply_markup=return_to_the_menu())
     except AccessDenied as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await cb.message.update_text(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
