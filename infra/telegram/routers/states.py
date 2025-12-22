@@ -8,12 +8,14 @@ from sqlalchemy.orm.base import state_class_str
 
 class AddTeacher(StatesGroup):
     waiting_username = State()
+    waiting_course_name = State()
 
 class AddAssistant(StatesGroup):
     waiting_username = State()
 
 class RemoveTeacher(StatesGroup):
     waiting_username = State()
+    waiting_course_name = State()
 
 class RemoveAssistant(StatesGroup):
     waiting_username = State()

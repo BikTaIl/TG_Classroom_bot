@@ -7,6 +7,7 @@ from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.admin_keyboards import *
 from .states import *
 from commands.admin_commands import *
+from commands.teacher_and_assistant_commands import _get_user_by_username
 
 admin_router = Router()
 
@@ -20,19 +21,34 @@ async def admin_panel(cb: CallbackQuery):
 @admin_router.callback_query(F.data == "grant_teacher_role")
 async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции grant_teacher_role"""
-    await state.set_state(AddTeacher.waiting_username)
+    await state.set_state(AddTeacher.waiting_course_name)
     await cb.message.answer(
-        "Пришли tg username учителя в формате @username (или просто username)."
+        "Пришли название организации, в которую ты хочешь добавить учителя."
     )
     await cb.answer()
 
-@admin_router.message(AddTeacher.waiting_username)
+@admin_router.message(AddTeacher.waiting_course_name)
 async def process_grant_teacher_role_second(message: Message, state: FSMContext):
+    organisation_name = message.text
+    all_data = await state.get_data()
+    all_data.update(organisation_name=organisation_name)
+    await state.clear()
+    await state.set_state(AddTeacher.waiting_username)
+    await message.answer(
+        "Пришли tg username учителя в формате @username (или просто username)."
+    )
+
+@admin_router.message(AddTeacher.waiting_username)
+async def process_grant_teacher_role_third(message: Message, state: FSMContext):
     """Ввод имени для функции grant_teacher_role"""
     username = message.text
+    all_data = await state.get_data()
+    organisation_name = all_data.get("organisation_name")
     try:
         async with AsyncSessionLocal() as session:
             await grant_teacher_role(message.from_user.id, username, session)
+            user_id = await _get_user_by_username(username, session)
+            await add_organisation(message.from_user.id, user_id, organisation_name, session)
         await message.answer("Учитель добавлен!", reply_markup=return_to_the_menu())
     except ValueError as err:
         await message.answer(str(err), reply_markup=return_to_the_menu())

@@ -23,7 +23,7 @@ async def process_set_student_active_course_first(cb: CallbackQuery, state: FSMC
     """Запуск по кнопке функции set_student_active_course"""
     await state.set_state(ChangeCourse.waiting_course_name)
     await cb.message.answer(
-        "Введите ID желаемого курса или '-', если хотите сбросить курс"
+        "Введите название желаемого курса или '-', если хотите сбросить курс"
     )
     await cb.answer()
 
@@ -245,6 +245,7 @@ async def process_submit_course_feedback_not_anonymus(cb: CallbackQuery, state: 
     """Запуск по кнопке функции is_not_anonymus"""
     all_data = await state.get_data()
     message_send = all_data.get("message")
+    all_data.update(message=None)
     course_name = all_data.get("course_name")
     try:
         async with AsyncSessionLocal() as session:
