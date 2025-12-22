@@ -680,6 +680,8 @@ async def find_assignments_by_course_id(
         course_id: int,
         session: AsyncSession
 ) -> Sequence[Row[tuple[int, str]]]:
+    if course_id is None:
+        raise ValueError('Курс не выбран')
     assignments_query = await session.execute(
         select(Assignment.github_assignment_id, Assignment.title).where(Assignment.classroom_id == course_id))
     return  [tuple(row) for row in assignments_query.all()]
