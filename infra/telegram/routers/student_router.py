@@ -7,7 +7,7 @@ from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.student_keyboards import *
 from .states import *
 from commands.student_commands import *
-from commands.teacher_and_assistant_commands import find_course, find_assignment
+from commands.teacher_and_assistant_commands import find_assignments_by_course_id
 
 student_router = Router()
 
@@ -18,34 +18,137 @@ async def admin_panel(cb: CallbackQuery):
     await cb.message.answer("Панель студента:", reply_markup=get_student_menu())
     await cb.answer()
 
-@student_router.callback_query(F.data == "set_student_active_course")
-async def process_set_student_active_course_first(cb: CallbackQuery, state: FSMContext):
-    """Запуск по кнопке функции set_student_active_course"""
-    await state.set_state(ChangeCourse.waiting_course_name)
-    await cb.message.edit_text(
-        "Введите название желаемого курса или '-', если хотите сбросить курс"
-    )
-    await cb.answer()
-
-@student_router.message(ChangeCourse.waiting_course_name)
-async def process_set_student_active_course_second(message: Message, state: FSMContext):
-    """Ввод ID курса для функции set_student_active_course"""
-    course_name = message.text
+@student_router.callback_query(F.data == "choose_student_active_course")
+async def process_choose_student_active_course(cb: CallbackQuery, state: FSMContext):
     try:
         async with AsyncSessionLocal() as session:
-            if course_name == '-':
-                await state.update_data(course_name=None)
-                await message.answer("Курс сброшен", reply_markup=return_to_the_menu())
-            else:
-                await state.update_data(course_name=course_name)
-                await message.answer("Курс установлен", reply_markup=return_to_the_menu())
+            courses = await find_students_courses(cb.from_user.id, session)
+        await cb.message.edit_text("Выберите курс или сбросьте его:", reply_markup=choose_course(courses, 0))
     except AccessDenied as err:
-        await message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
-        await message.answer(str(err), reply_markup=return_to_the_menu())
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
-        await state.clear()
+        await cb.answer()
 
+@student_router.callback_query(F.data.startswith("set_student_active_course"))
+async def process_set_student_active_course(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    course_id = int(data[0])
+    try:
+        if course_id == 0:
+            await state.update_data(course_id=None)
+            await cb.message.answer("Курс сброшен", reply_markup=return_to_the_menu())
+        else:
+            await state.update_data(course_id=course_id)
+            await cb.message.answer("Курс установлен", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@student_router.callback_query(F.data.startswith("previous_paper_course_student"))
+async def process_previous_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    try:
+        async with AsyncSessionLocal() as session:
+            courses = await find_students_courses(cb.from_user.id, session)
+        await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, page - 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@student_router.callback_query(F.data.startswith("next_paper_course_student"))
+async def process_next_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    try:
+        async with AsyncSessionLocal() as session:
+            courses = await find_students_courses(cb.from_user.id, session)
+        await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, page + 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@student_router.callback_query(F.data == "choose_student_active_assignment")
+async def process_choose_student_active_assignment(cb: CallbackQuery, state: FSMContext):
+    all_data = await state.get_data()
+    course_id = all_data.get("course_id")
+    try:
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                assignments = await find_assignments_by_course_id(course_id, session)
+                print(assignments)
+            await cb.message.edit_text("Выберите задание или сбростье его:", reply_markup=choose_assignment(assignments, 0))
+        else:
+            await cb.message.edit_text("Чтобы выбрать активное задание, нужно выбрать активный курс.", reply_markup=have_to_choose_course())
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@student_router.callback_query(F.data.startswith("set_student_active_assignment"))
+async def process_set_student_active_assignment(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    assignment_id = int(data[1])
+    try:
+        if assignment_id == 0:
+            await state.update_data(assignment_id=None)
+            await cb.message.answer("Задание сброшено", reply_markup=return_to_the_menu())
+        else:
+            await state.update_data(assignment_id=assignment_id)
+            await cb.message.answer("Задание установлено", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@student_router.callback_query(F.data.startswith("previous_paper_assignment_student"))
+async def process_previous_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    all_data = await state.get_data()
+    course_id = all_data.get("course_id")
+    try:
+        async with AsyncSessionLocal() as session:
+            assignments = await find_assignments_by_course_id(course_id, session)
+        await cb.message.edit_text("Выберите задание:", reply_markup=choose_assignment(assignments, page - 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@student_router.callback_query(F.data.startswith("next_paper_assignment_student"))
+async def process_next_page(cb: CallbackQuery, state: FSMContext):
+    data = cb.data.split(":")
+    page = int(data[1])
+    all_data = await state.get_data()
+    course_id = all_data.get("course_id")
+    try:
+        async with AsyncSessionLocal() as session:
+            assignments = await find_assignments_by_course_id(course_id, session)
+        await cb.message.edit_text("Выберите задание:", reply_markup=choose_assignment(assignments, page + 1))
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
 
 @student_router.callback_query(F.data == "get_student_notification_rules")
 async def process_get_student_notification_rules(cb: CallbackQuery, state: FSMContext):
@@ -140,10 +243,9 @@ async def process_reset_student_notification_rules_to_default(cb: CallbackQuery,
 async def process_get_student_active_assignments_summary(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_student_active_assignments_summary"""
     all_data = await state.get_data()
-    course_name = all_data.get("course_name")
+    course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            course_id = await find_course(cb.from_user.id, course_name, session)
             result = await table_to_text(await get_student_active_assignments_summary(cb.from_user.id, course_id, session))
         await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -159,10 +261,9 @@ async def process_get_student_active_assignments_summary(cb: CallbackQuery, stat
 async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_student_overdue_assignments_summary"""
     all_data = await state.get_data()
-    course_name = all_data.get("course_name")
+    course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            course_id = await find_course(cb.from_user.id, course_name, session)
             result = await get_student_overdue_assignments_summary(cb.from_user.id, course_id,  session)
         await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -177,10 +278,9 @@ async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, sta
 async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_student_grades_summary"""
     all_data = await state.get_data()
-    course_name = all_data.get("course_name")
+    course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            course_id = await find_course(cb.from_user.id, course_name, session)
             result = await get_student_grades_summary(cb.from_user.id, course_id, session)
         await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -195,11 +295,9 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
 async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_student_grades_summary"""
     all_data = await state.get_data()
-    assignment_name = all_data.get("assignment_name")
-    course_name = all_data.get("course_name")
+    assignment_id = all_data.get("assignment_id")
     try:
         async with AsyncSessionLocal() as session:
-            assignment_id = await find_assignment(str(await find_course(cb.from_user.id, course_name, session)), assignment_name, session)
             result = await get_student_grades_summary(cb.from_user.id, assignment_id, session)
         await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -233,10 +331,9 @@ async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMC
     """Запуск по кнопке функции is_anonymus"""
     all_data = await state.get_data()
     message_send = all_data.get("message")
-    course_name = all_data.get("course_name")
+    course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            course_id = await find_course(cb.from_user.id, course_name, session)
             await submit_course_feedback(cb.from_user.id, course_id, message_send, True, session)
         await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -252,12 +349,11 @@ async def process_submit_course_feedback_not_anonymus(cb: CallbackQuery, state: 
     all_data = await state.get_data()
     message_send = all_data.get("message")
     all_data.update(message=None)
-    course_name = all_data.get("course_name")
+    course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            course_id = await find_course(cb.from_user.id, course_name, session)
-            teacher_id = await submit_course_feedback(cb.from_user.id, course_id, message_send, False, session)
-        await cb.bot.send_message(teacher_id, message_send)
+            student_id = await submit_course_feedback(cb.from_user.id, course_id, message_send, False, session)
+        await cb.bot.send_message(student_id, message_send)
         await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())

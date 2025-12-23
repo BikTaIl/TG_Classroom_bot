@@ -266,7 +266,7 @@ async def process_get_teacher_deadline_notification_payload_teacher(cb: Callback
     course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+            overview = await get_teacher_deadline_notification_payload(cb.from_user.id, assignment_id, session)
         if overview:
             await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
         else:
