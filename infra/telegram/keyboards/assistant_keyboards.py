@@ -58,7 +58,6 @@ def choose_course(courses: list[tuple[Any, ...]], page: int) -> InlineKeyboardMa
     buttons = [[InlineKeyboardButton(text=courses[i][1], callback_data=f"set_assistant_active_course:{str(courses[i][0])}") for i in range(page * 6, min((page + 1) * 6, len(courses)))]]
     buttons.append(
         [InlineKeyboardButton(text="Предыдущая страница", callback_data=f"previous_paper_course_assistant:{str(page)}" if page != 0 else ""),
-         InlineKeyboardButton(text=f"{str(page + 1)}/{str(pages)}", callback_data=""),
          InlineKeyboardButton(text="Следующая страница", callback_data=f"next_paper_course_assistant:{str(page)}" if page != pages - 1 else "")]
     )
     return InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -72,7 +71,6 @@ def choose_assignment(assignments: list[tuple[Any, ...]], page: int) -> InlineKe
     buttons = [[InlineKeyboardButton(text=assignments[i][1], callback_data=f"set_assistant_active_assignment:{str(assignments[i][0])}:{str(assignments[i][0])}") for i in range(page * 6, min((page + 1) * 6, len(assignments)))]]
     buttons.append(
         [InlineKeyboardButton(text="Предыдущая страница", callback_data=f"previous_paper_course_assistant:{str(page)}" if page != 0 else ""),
-         InlineKeyboardButton(text=f"{str(page + 1)}/{str(pages)}", callback_data=""),
          InlineKeyboardButton(text="Следующая страница", callback_data=f"next_paper_course_assistant:{str(page)}" if page != pages - 1 else "")]
     )
     return InlineKeyboardMarkup(inline_keyboard=buttons)
