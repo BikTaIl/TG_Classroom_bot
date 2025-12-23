@@ -14,6 +14,7 @@ def get_teacher_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Создать уведомление для курса", callback_data="create_course_announcement_teacher")],
         [InlineKeyboardButton(text="Выполнить ручную синхронизацию курса", callback_data="trigger_manual_sync_for_teacher_teacher")],
         [InlineKeyboardButton(text="Добавить ручную проверку текущему заданию", callback_data="select_manual_check_assignment_teacher")],
+        [InlineKeyboardButton(text="Добавить автоматическую проверку текущему заданию", callback_data="delete_manual_check_assignment_teacher")],
         [InlineKeyboardButton(text="Сводки", callback_data="get_summary_teacher")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]
     ]
