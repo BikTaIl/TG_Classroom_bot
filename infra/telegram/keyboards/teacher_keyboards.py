@@ -5,14 +5,15 @@ from typing import Any
 def get_teacher_menu() -> InlineKeyboardMarkup:
     """Основная клавиатура учителя"""
     buttons = [
-        [InlineKeyboardButton(text="Установить активный курс", callback_data="choose_teacher_active_course_teacher")],
-        [InlineKeyboardButton(text="Установить активное задание", callback_data="choose_teacher_active_assignment_teacher")],
+        [InlineKeyboardButton(text="Установить активный курс", callback_data="choose_teacher_active_course")],
+        [InlineKeyboardButton(text="Установить активное задание", callback_data="choose_teacher_active_assignment")],
         [InlineKeyboardButton(text="Github-логины студентов, которых нет в боте", callback_data="get_classroom_users_without_bot_accounts_teacher")],
         [InlineKeyboardButton(text="Данные для уведомления по сдаче", callback_data="get_teacher_deadline_notification_payload_teacher")],
         [InlineKeyboardButton(text="Добавить ассистента", callback_data="add_course_assistant_teacher")],
         [InlineKeyboardButton(text="Удалить ассистента", callback_data="remove_course_assistant_teacher")],
         [InlineKeyboardButton(text="Создать уведомление для курса", callback_data="create_course_announcement_teacher")],
         [InlineKeyboardButton(text="Выполнить ручную синхронизацию курса", callback_data="trigger_manual_sync_for_teacher_teacher")],
+        [InlineKeyboardButton(text="Добавить ручную проверку текущему заданию", callback_data="select_manual_check_assignment_teacher")],
         [InlineKeyboardButton(text="Сводки", callback_data="get_summary_teacher")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]
     ]
@@ -50,11 +51,11 @@ def summaries() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def choose_course(courses: list[tuple[Any, ...]], page: int) -> InlineKeyboardMarkup:
-    pages = (len(courses) + 5) // 6
     courses.append(("Сбросить курс", 0))
+    pages = (len(courses) + 5) // 6
     if page >= pages:
         page = pages - 1
-    buttons = [[InlineKeyboardButton(text=courses[i][0], callback_data=f"set_teacher_active_course:{str(courses[i][0])}") for i in range(page * 6, min((page + 1) * 6, len(courses)))]]
+    buttons = [[InlineKeyboardButton(text=courses[i][1], callback_data=f"set_teacher_active_course:{str(courses[i][0])}")] for i in range(page * 6, min((page + 1) * 6, len(courses)))]
     buttons.append(
         [InlineKeyboardButton(text="Предыдущая страница", callback_data=f"previous_paper_course_teacher:{page}" if page != 0 else ""),
          InlineKeyboardButton(text=f"{page + 1}/{pages}"),
@@ -68,7 +69,7 @@ def choose_assignment(assignments: list[tuple[Any, ...]], page: int) -> InlineKe
     assignments.append(("Сбросить курс", 0))
     if page >= pages:
         page = pages - 1
-    buttons = [[InlineKeyboardButton(text=assignments[i][0], callback_data=f"set_teacher_active_course:{str(assignments[i][0])}:{str(assignments[i][1])}") for i in range(page * 6, min((page + 1) * 6, len(assignments)))]]
+    buttons = [[InlineKeyboardButton(text=assignments[i][1], callback_data=f"set_teacher_active_assignment:{str(assignments[i][0])}") for i in range(page * 6, min((page + 1) * 6, len(assignments)))]]
     buttons.append(
         [InlineKeyboardButton(text="Предыдущая страница", callback_data=f"previous_paper_course_teacher:{page}" if page != 0 else ""),
          InlineKeyboardButton(text=f"{page + 1}/{pages}"),
