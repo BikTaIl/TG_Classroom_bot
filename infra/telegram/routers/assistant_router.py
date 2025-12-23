@@ -38,7 +38,7 @@ async def process_set_assistant_active_course(cb: CallbackQuery, state: FSMConte
     data = cb.data.split(":")
     course_id = int(data[0])
     try:
-        if course_id == 'Сбросить курс':
+        if course_id == 0:
             await state.update_data(course_id=None)
             await cb.message.answer("Курс сброшен", reply_markup=return_to_the_menu())
         else:
@@ -105,7 +105,7 @@ async def process_set_assistant_active_assignment(cb: CallbackQuery, state: FSMC
     assignment_id = int(data[1])
     try:
         async with AsyncSessionLocal() as session:
-            if assignment_id == 'Сбросить задание':
+            if assignment_id == 0:
                 await state.update_data(assignment_id=None)
                 await cb.message.answer("Задание сброшено", reply_markup=return_to_the_menu())
             else:
