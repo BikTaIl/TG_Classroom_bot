@@ -27,7 +27,7 @@ async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext)
     )
     await cb.answer()
 
-@admin_router.message(AddTeacher.waiting_course_name)
+@admin_router.message(AddTeacher.waiting_course_id)
 async def process_grant_teacher_role_second(message: Message, state: FSMContext):
     organisation_name = message.text
     all_data = await state.get_data()

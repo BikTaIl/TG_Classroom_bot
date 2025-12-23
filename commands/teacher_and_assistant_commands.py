@@ -554,7 +554,7 @@ async def add_course_assistant(
     if permission_find is None:
         permission = Permission(
             telegram_id=new_assistant.telegram_id,
-
+            permitted_role='assistant'
         )
         session.add(permission)
     session.add(new_assistant)
