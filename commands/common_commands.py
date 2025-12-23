@@ -28,7 +28,8 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
                 notifications_enabled=True,
             )
             session.add(user)
-
+        else:
+            raise ValueError("Пользователь уже существует.")
 
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:
     """Установить активную роль пользователя: 'student', 'teacher', 'assistant', 'admin'. С проверкой на доступность роли"""

@@ -58,6 +58,14 @@ async def revoke_teacher_role(
     if not user:
         raise ValueError(f"Пользователь {target_telegram_username} не найден")
 
+    existing_query = select(Permission).where(
+        (Permission.telegram_id == user.telegram_id) &
+        (Permission.permitted_role == 'teacher')
+    )
+    existing_result = await session.execute(existing_query)
+    existing_permission = existing_result.scalar_one_or_none()
+    if not existing_permission:
+        raise ValueError(f"У пользователя {target_telegram_username} нет роли 'teacher'")
     stmt = delete(Permission).where(
         and_(
             Permission.telegram_id == user.telegram_id,
