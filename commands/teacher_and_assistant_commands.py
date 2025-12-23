@@ -620,7 +620,9 @@ async def create_course_announcement(
     assignment_stmt = select(Assignment.github_assignment_id).where(Assignment.classroom_id == course_id)
     assignment_result = await session.execute(assignment_stmt)
     query = select(Submission.student_telegram_id).where(
-        Submission.assignment_id.in_(assignment_result.scalars().all()))
+        Submission.assignment_id.in_(assignment_result.scalars().all()),
+        Submission.student_telegram_id.isnot(None)
+    )
     submission_result = await session.execute(query)
     return submission_result.scalars().all()
 
