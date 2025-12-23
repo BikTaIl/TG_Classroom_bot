@@ -421,6 +421,25 @@ async def process_select_manual_check_assignment_teacher(cb: CallbackQuery, stat
         if assignment_id:
             async with AsyncSessionLocal() as session:
                 await select_manual_check_assignment(assignment_id, session)
+            await cb.message.edit_text("Ручная проверка установлена.", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для манипуляций над заданиями курса выберите активное задание", reply_markup=have_to_choose_assignment())
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@teacher_router.callback_query(F.data == "delete_manual_check_assignment_teacher")
+async def process_delete_manual_check_assignment_teacher(cb: CallbackQuery, state: FSMContext):
+    all_data = await state.get_data()
+    assignment_id = all_data.get("assignment_id")
+    try:
+        if assignment_id:
+            async with AsyncSessionLocal() as session:
+                await delete_manual_check_assignment(assignment_id, session)
+            await cb.message.edit_text("Автоматическая проверка установлена.", reply_markup=return_to_the_menu())
         else:
             await cb.message.edit_text("Для манипуляций над заданиями курса выберите активное задание", reply_markup=have_to_choose_assignment())
     except AccessDenied as err:

@@ -727,3 +727,16 @@ async def select_manual_check_assignment(
         raise ValueError("Выбранное задание отсутствует")
     assignment.grading_mode = 'manual'
     await session.commit()
+
+async def delete_manual_check_assignment(
+        assignment_id: int,
+        session: AsyncSession
+) -> None:
+    if assignment_id is None:
+        raise ValueError("Задание не выбрано")
+    assignment = await session.get(Assignment, assignment_id)
+    if assignment is None:
+        raise ValueError("Выбранное задание отсутствует")
+    assignment.grading_mode = 'auto'
+    await session.commit()
+
