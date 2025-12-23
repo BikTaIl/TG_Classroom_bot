@@ -225,7 +225,7 @@ async def get_course_deadlines_overview(
         select(GitOrganization.organization_name).where(GitOrganization.teacher_telegram_id == telegram_id))
     org = org_query.scalar_one_or_none()
 
-    query = select(
+    query = (select(
         Assignment.github_assignment_id,
         Assignment.title,
         Assignment.deadline_full,
@@ -234,8 +234,10 @@ async def get_course_deadlines_overview(
         func.count(distinct(GithubAccount.github_username)).label("total_students")
     ).join(
         Course, Assignment.classroom_id == Course.classroom_id
+    ).join(
+        Submission, Submission.assignment_id == Assignment.github_assignment_id
     ).outerjoin(
-        GithubAccount, true()
+        GithubAccount, GithubAccount.github_username == Submission.student_github_username
     ).outerjoin(
         Assistant,
         and_(
@@ -253,7 +255,7 @@ async def get_course_deadlines_overview(
         Assignment.deadline_full,
         Course.name,
         Course.classroom_id
-    )
+    ))
 
     if course_id:
         query = query.where(Course.classroom_id == course_id)
@@ -278,12 +280,15 @@ async def get_course_deadlines_overview(
 
     submissions_result = await session.execute(submissions_query)
     submissions_map = {row.assignment_id: row.submitted_count for row in submissions_result.all()}
-
     overview = []
     for assignment in assignments:
         submitted_count = submissions_map.get(Assignment.github_assignment_id, 0)
-        total_students = assignment.total_students or 0
-
+        total_students = assignment.total_students
+        print(assignment)
+        print(total_students)
+        if total_students is None:
+            total_students = 0
+        print(total_students)
         overview.append({
             "assignment": assignment.title,
             "course": assignment.course_name,

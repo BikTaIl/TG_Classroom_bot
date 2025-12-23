@@ -88,7 +88,6 @@ class Course(Base):
     )
 
     organizations = relationship("GitOrganization", back_populates="course")
-    assistants = relationship("Assistant", back_populates="course")
     assignments = relationship("Assignment", back_populates="course")
 
 
@@ -96,10 +95,9 @@ class Assistant(Base):
     __tablename__ = "assistants"
 
     telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), primary_key=True)
-    course_id = Column(BigInteger, ForeignKey("courses.classroom_id"), primary_key=True)
+    course_id = Column(BigInteger, primary_key=True)
 
     user = relationship("User", back_populates="assistants")
-    course = relationship("Course", back_populates="assistants")
 
 
 class Assignment(Base):
