@@ -14,6 +14,7 @@ def get_assistant_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="Сводка по ручной проверке", callback_data="get_manual_check_submissions_summary_assistant")],
         [InlineKeyboardButton(text="Данные для уведомления по сдаче", callback_data="get_assistant_deadline_notification_payload_assistant")],
         [InlineKeyboardButton(text="Сводки", callback_data="get_summary_assistant")],
+        [InlineKeyboardButton(text="Добавить ручную проверку текущему заданию", callback_data="select_manual_check_assignment_assistant")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

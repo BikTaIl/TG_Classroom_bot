@@ -26,7 +26,7 @@ async def process_choose_teacher_active_course(cb: CallbackQuery, state: FSMCont
     try:
         async with AsyncSessionLocal() as session:
             courses = await find_teachers_courses(cb.from_user.id, session)
-        await cb.message.edit_text("Выберите курс:", reply_markup=choose_course(courses, 0))
+        await cb.message.edit_text("Выберите курс или сбростье его:", reply_markup=choose_course(courses, 0))
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -87,9 +87,12 @@ async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSM
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            assignments = await find_assignments_by_course_id(course_id, session)
-        await cb.message.edit_text("Выберите задание:", reply_markup=choose_assignment(assignments, 0))
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                assignments = await find_assignments_by_course_id(course_id, session)
+            await cb.message.edit_text("Выберите задание или сбростье его:", reply_markup=choose_assignment(assignments, 0))
+        else:
+            await cb.message.edit_text("Чтобы выбрать активное задание, нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -100,13 +103,13 @@ async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSM
 @teacher_router.callback_query(F.data.startswith("set_teacher_active_assignment"))
 async def process_set_teacher_active_assignment(cb: CallbackQuery, state: FSMContext):
     data = cb.data.split(":")
-    assignment_name = int(data[1])
+    assignment_id = int(data[1])
     try:
-        if assignment_name == 'Сбросить задание':
-            await state.update_data(assignment_name=None)
+        if assignment_id == 'Сбросить задание':
+            await state.update_data(assignment_id=None)
             await cb.message.answer("Задание сброшено", reply_markup=return_to_the_menu())
         else:
-            await state.update_data(assignment_name=assignment_name)
+            await state.update_data(assignment_id=assignment_id)
             await cb.message.answer("Задание установлено", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
@@ -169,11 +172,10 @@ async def process_get_course_students_overview_teacher(cb: CallbackQuery, state:
 async def process_get_assignment_students_status_teacher(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_assignment_students_status_teacher"""
     all_data = await state.get_data()
-    assignment_name = all_data.get("assignment_name")
+    assignment_id = all_data.get("assignment_id")
     course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            assignment_id = await find_assignment(course_id, assignment_name, session)
             overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
         await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
     except AccessDenied as err:
@@ -259,11 +261,10 @@ async def process_get_manual_check_submissions_summary_teacher(cb: CallbackQuery
 async def process_get_teacher_deadline_notification_payload_teacher(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции get_teacher_deadline_notification_payload_teacher"""
     all_data = await state.get_data()
-    assignment_name = all_data.get("assignment_name")
+    assignment_id = all_data.get("assignment_id")
     course_id = all_data.get("course_id")
     try:
         async with AsyncSessionLocal() as session:
-            assignment_id = await find_assignment(course_id, assignment_name, session)
             overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
         if overview:
             await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
@@ -370,6 +371,20 @@ async def process_get_course_deadlines_overview_teacher(cb: CallbackQuery):
             await cb.message.edit_text("Сессия синхронизирована")
         else:
             await cb.message.edit_text("Сессия была обновлена уже 3 раза за сутки. Нет доступа.")
+    except AccessDenied as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await cb.answer()
+
+@teacher_router.callback_query(F.data == "select_manual_check_assignment_teacher")
+async def process_select_manual_check_assignment_teacher(cb: CallbackQuery, state: FSMContext):
+    all_data = await state.get_data()
+    assignment_id = all_data.get("assignment_id")
+    try:
+        async with AsyncSessionLocal() as session:
+            await select_manual_check_assignment(assignment_id, session)
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
