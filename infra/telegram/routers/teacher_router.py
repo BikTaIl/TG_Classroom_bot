@@ -90,7 +90,6 @@ async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSM
         if course_id:
             async with AsyncSessionLocal() as session:
                 assignments = await find_assignments_by_course_id(course_id, session)
-                print(assignments)
             await cb.message.edit_text("Выберите задание или сбростье его:", reply_markup=choose_assignment(assignments, 0))
         else:
             await cb.message.edit_text("Чтобы выбрать активное задание, нужно выбрать активный курс.", reply_markup=have_to_choose_course())
