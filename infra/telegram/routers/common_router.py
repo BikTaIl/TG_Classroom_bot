@@ -30,7 +30,7 @@ async def start_panel(message: Message):
 
 
 @common_router.callback_query(F.data == "start")
-async def start_panel(cb: CallbackQuery):
+async def return_to_start_panel(cb: CallbackQuery):
     """Функция отображения основной панели.
        Отображается через кнопку, которая появляется после выполнения команды."""
     await cb.message.answer("Основная панель:", reply_markup=get_start_menu())
