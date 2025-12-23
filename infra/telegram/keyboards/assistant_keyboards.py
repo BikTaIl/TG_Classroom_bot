@@ -32,9 +32,17 @@ def return_to_the_menu() -> InlineKeyboardMarkup:
 def have_to_choose_course() -> InlineKeyboardMarkup:
     buttons = [
 
-        [InlineKeyboardButton(text="Установить активный курс", callback_data="set_assistant_active_course"),
-        [InlineKeyboardButton(text="В меню учителя", callback_data="start_assistant")],
+        [InlineKeyboardButton(text="Установить активный курс", callback_data="choose_assistant_active_course"),
+        [InlineKeyboardButton(text="В меню ассистента", callback_data="start_assistant")],
         [InlineKeyboardButton(text="В главное меню", callback_data="start")]]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def have_to_choose_assignment() -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="Установить активное задание", callback_data="choose_assistant_active_assignment")],
+        [InlineKeyboardButton(text="В меню ассистента", callback_data="start_assistant")],
+        [InlineKeyboardButton(text="В главное меню", callback_data="start")]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

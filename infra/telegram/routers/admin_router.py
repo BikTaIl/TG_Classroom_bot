@@ -21,13 +21,13 @@ async def admin_panel(cb: CallbackQuery):
 @admin_router.callback_query(F.data == "grant_teacher_role")
 async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext):
     """Запуск по кнопке функции grant_teacher_role"""
-    await state.set_state(AddTeacher.waiting_course_name)
+    await state.set_state(AddTeacher.waiting_organization_name)
     await cb.message.edit_text(
         "Пришли название организации, в которую ты хочешь добавить учителя."
     )
     await cb.answer()
 
-@admin_router.message(AddTeacher.waiting_course_id)
+@admin_router.message(AddTeacher.waiting_organization_name)
 async def process_grant_teacher_role_second(message: Message, state: FSMContext):
     organisation_name = message.text
     all_data = await state.get_data()
