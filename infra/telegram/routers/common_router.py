@@ -15,9 +15,13 @@ common_router = Router()
 async def start_panel(message: Message):
     """Функция отображения основной панели.
        Отображается через команду /start."""
-    async with AsyncSessionLocal() as session:
-        await create_user(message.from_user.id, message.from_user.username, session)
-    await message.answer("Основная панель:", reply_markup=get_start_menu())
+    try:
+        async with AsyncSessionLocal() as session:
+            await create_user(message.from_user.id, message.from_user.username, session)
+    except ValueError:
+        pass
+    finally:
+        await message.answer("Основная панель:", reply_markup=get_start_menu())
 
 
 @common_router.callback_query(F.data == "start")
