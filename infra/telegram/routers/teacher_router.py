@@ -369,7 +369,7 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
     if course_id:
         await state.set_state(AddAnnouncement.waiting_text)
         await cb.message.edit_text(
-            "Введите ник ассистента в виде @username или username:"
+            "Введите текст сообщения, которое хотите отправить:"
         )
     else:
         await cb.message.edit_text("Для добавления объявления на курсе выберите активный курс", reply_markup=have_to_choose_course())

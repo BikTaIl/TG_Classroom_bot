@@ -2,11 +2,11 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from .routers.common_router import common_router
-from .routers.admin_router import admin_router
-from .routers.assistant_router import assistant_router
-from .routers.student_router import student_router
-from .routers.teacher_router import teacher_router
+from infra.telegram.routers.common_router import common_router
+from infra.telegram.routers.admin_router import admin_router
+from infra.telegram.routers.assistant_router import assistant_router
+from infra.telegram.routers.student_router import student_router
+from infra.telegram.routers.teacher_router import teacher_router
 import os
 from dotenv import load_dotenv
 
