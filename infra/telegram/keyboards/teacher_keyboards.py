@@ -37,6 +37,14 @@ def have_to_choose_course() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
+def have_to_choose_assignment() -> InlineKeyboardMarkup:
+    buttons = [
+        [InlineKeyboardButton(text="Установить активное задание", callback_data="choose_teacher_active_assignment")],
+        [InlineKeyboardButton(text="В меню учителя", callback_data="start_teacher")],
+        [InlineKeyboardButton(text="В главное меню", callback_data="start")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
 def summaries() -> InlineKeyboardMarkup:
     buttons = [
         [InlineKeyboardButton(text="Сводка по ручной проверке", callback_data="get_manual_check_submissions_summary_teacher")],

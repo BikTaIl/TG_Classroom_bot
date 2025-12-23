@@ -158,9 +158,12 @@ async def process_get_course_students_overview_assistant(cb: CallbackQuery, stat
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_course_students_overview(cb.from_user.id, course_id, session)
-        await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_course_students_overview(cb.from_user.id, course_id, session)
+            await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -173,11 +176,13 @@ async def process_get_assignment_students_status_assistant(cb: CallbackQuery, st
     """Запуск по кнопке функции get_assignment_students_status_assistant"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    course_id = all_data.get("couse_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-        await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        if assignment_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+            await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о задании нужно выбрать активный курс.", reply_markup=have_to_choose_assignment())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -192,12 +197,15 @@ async def process_get_classroom_users_without_bot_accounts_assistant(cb: Callbac
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
-        result = ""
-        for username in overview:
-            result += username + "\n"
-        await cb.message.edit_text(result, reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_classroom_users_without_bot_accounts(cb.from_user.id, course_id, session)
+            result = ""
+            for username in overview:
+                result += username + "\n"
+            await cb.message.edit_text(result, reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -212,9 +220,12 @@ async def process_get_course_deadlines_overview_assistant(cb: CallbackQuery, sta
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
-        await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_course_deadlines_overview(cb.from_user.id, course_id, session)
+            await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -229,9 +240,12 @@ async def process_get_tasks_to_grade_summary_assistant(cb: CallbackQuery, state:
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
-        await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_tasks_to_grade_summary(cb.from_user.id, course_id, session)
+            await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -246,9 +260,12 @@ async def process_get_manual_check_submissions_summary_assistant(cb: CallbackQue
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
-        await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_manual_check_submissions_summary(cb.from_user.id, course_id, session)
+            await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -262,14 +279,16 @@ async def process_get_assistant_deadline_notification_payload_assistant(cb: Call
     """Запуск по кнопке функции get_assistant_deadline_notification_payload_assistant"""
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
-    course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
-        if overview:
-            await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+        if assignment_id:
+            async with AsyncSessionLocal() as session:
+                overview = await get_assignment_students_status(cb.from_user.id, assignment_id, session)
+            if overview:
+                await cb.message.edit_text(await table_to_text(overview), reply_markup=return_to_the_menu())
+            else:
+                await cb.message.edit_text("Данных нет")
         else:
-            await cb.message.edit_text("Данных нет")
+            await cb.message.edit_text("Для получения данных о задании нужно выбрать активный курс.", reply_markup=have_to_choose_assignment())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -282,8 +301,11 @@ async def process_select_manual_check_assignment_assistant(cb: CallbackQuery, st
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     try:
-        async with AsyncSessionLocal() as session:
-            await select_manual_check_assignment(assignment_id, session)
+        if assignment_id:
+            async with AsyncSessionLocal() as session:
+                await select_manual_check_assignment(assignment_id, session)
+        else:
+            await cb.message.edit_text("Для получения данных о задании нужно выбрать активный курс.", reply_markup=have_to_choose_assignment())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:

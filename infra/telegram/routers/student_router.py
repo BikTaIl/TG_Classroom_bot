@@ -245,9 +245,12 @@ async def process_get_student_active_assignments_summary(cb: CallbackQuery, stat
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            result = await table_to_text(await get_student_active_assignments_summary(cb.from_user.id, course_id, session))
-        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                result = await table_to_text(await get_student_active_assignments_summary(cb.from_user.id, course_id, session))
+            await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -263,9 +266,12 @@ async def process_get_student_overdue_assignments_summary(cb: CallbackQuery, sta
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            result = await get_student_overdue_assignments_summary(cb.from_user.id, course_id,  session)
-        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                result = await get_student_overdue_assignments_summary(cb.from_user.id, course_id,  session)
+            await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -280,9 +286,12 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            result = await get_student_grades_summary(cb.from_user.id, course_id, session)
-        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                result = await get_student_grades_summary(cb.from_user.id, course_id, session)
+            await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -297,9 +306,12 @@ async def process_get_student_grades_summary(cb: CallbackQuery, state: FSMContex
     all_data = await state.get_data()
     assignment_id = all_data.get("assignment_id")
     try:
-        async with AsyncSessionLocal() as session:
-            result = await get_student_grades_summary(cb.from_user.id, assignment_id, session)
-        await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        if assignment_id:
+            async with AsyncSessionLocal() as session:
+                result = await get_student_grades_summary(cb.from_user.id, assignment_id, session)
+            await cb.message.edit_text(f"Сводка всех активных заданий:\n{result}", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о задании нужно выбрать активный курс.", reply_markup=have_to_choose_assignment())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -333,9 +345,12 @@ async def process_submit_course_feedback_anonymus(cb: CallbackQuery, state: FSMC
     message_send = all_data.get("message")
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            await submit_course_feedback(cb.from_user.id, course_id, message_send, True, session)
-        await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                await submit_course_feedback(cb.from_user.id, course_id, message_send, True, session)
+            await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
@@ -351,10 +366,13 @@ async def process_submit_course_feedback_not_anonymus(cb: CallbackQuery, state: 
     all_data.update(message=None)
     course_id = all_data.get("course_id")
     try:
-        async with AsyncSessionLocal() as session:
-            student_id = await submit_course_feedback(cb.from_user.id, course_id, message_send, False, session)
-        await cb.bot.send_message(student_id, message_send)
-        await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
+        if course_id:
+            async with AsyncSessionLocal() as session:
+                student_id = await submit_course_feedback(cb.from_user.id, course_id, message_send, False, session)
+            await cb.bot.send_message(student_id, message_send)
+            await cb.message.answer("Сообщение отправлено!", reply_markup=return_to_the_menu())
+        else:
+            await cb.message.edit_text("Для получения данных о курсе нужно выбрать активный курс.", reply_markup=have_to_choose_course())
     except AccessDenied as err:
         await cb.message.answer(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:
