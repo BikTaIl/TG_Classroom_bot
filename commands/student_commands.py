@@ -1,14 +1,10 @@
-from typing import Optional, Sequence, Mapping, Any, List, Tuple
-from datetime import datetime, date
+from typing import Optional, Sequence, Mapping, Any
+from datetime import datetime
 
-from requests import session
-from sqlalchemy import select, update, delete, and_, or_, func
+from sqlalchemy import select, delete, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from decimal import Decimal
 
-from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
-    ErrorLog, AccessDenied, GitOrganization
+from models.db import User, Notification, Course, Assignment, Submission, GitOrganization
 
 
 async def _get_students_courses(telegram_id: int, session: AsyncSession) -> Sequence[int]:

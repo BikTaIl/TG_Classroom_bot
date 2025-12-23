@@ -1,12 +1,9 @@
-from typing import Optional, Sequence, Mapping, Any
+from typing import Optional, Mapping, Any
 from datetime import datetime, date
-from sqlalchemy import select, update, delete, and_, or_, func, desc
+from sqlalchemy import select, delete, and_, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from decimal import Decimal
 from .teacher_and_assistant_commands import _check_permission, _get_user_by_username
-from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
-    ErrorLog, AccessDenied, GitLogs, GitOrganization
+from models.db import Permission, ErrorLog, GitLogs, GitOrganization
 
 SUCCESS_STATUS = 200
 

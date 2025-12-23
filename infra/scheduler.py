@@ -1,5 +1,3 @@
-# удалять неактульные стейты из OauthState
-
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -8,10 +6,10 @@ from commands.sync import get_students_nearing_deadline
 from commands.sync import delete_overdued_states
 from commands.sync import zero_sync_counter
 from models.gh_client import GitHubClassroomClient
-from models.db import ErrorLog, Assistant, Assignment, User, Notification, Submission, GitOrganization, Course
-from db import AsyncSessionLocal
-from telegram.app import bot
-from telegram.keyboards.common_keyboards import return_to_the_start
+from models.db import ErrorLog
+from infra.db import AsyncSessionLocal
+from .telegram.app import bot
+from .telegram.keyboards.common_keyboards import return_to_the_start
 
 scheduler = AsyncIOScheduler()
 gh = GitHubClassroomClient()

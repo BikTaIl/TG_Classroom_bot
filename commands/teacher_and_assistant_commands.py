@@ -1,13 +1,9 @@
-from typing import Optional, Sequence, Mapping, Any, List, Tuple
-from sqlalchemy import Row
-from datetime import datetime, date
-from sqlalchemy import select, update, delete, and_, or_, func, case, distinct, true
+from typing import Optional, Sequence, Mapping, Any
+from datetime import datetime
+from sqlalchemy import select, delete, and_, or_, func, case, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from decimal import Decimal
-from .sync import sync_function
-from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
-    ErrorLog, AccessDenied, GitOrganization
+from models.db import User, GithubAccount, Course, Assignment, Assistant, Submission, Permission, AccessDenied, \
+    GitOrganization
 
 
 async def _get_user_by_username(username: str, session: AsyncSession) -> Optional[User]:
@@ -735,6 +731,7 @@ async def select_manual_check_assignment(
     assignment.grading_mode = 'manual'
     await session.commit()
 
+
 async def delete_manual_check_assignment(
         assignment_id: int,
         session: AsyncSession
@@ -746,4 +743,3 @@ async def delete_manual_check_assignment(
         raise ValueError("Выбранное задание отсутствует")
     assignment.grading_mode = 'auto'
     await session.commit()
-
