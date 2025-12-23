@@ -39,7 +39,7 @@ async def process_set_teacher_active_course(cb: CallbackQuery, state: FSMContext
     data = cb.data.split(":")
     course_id = int(data[1])
     try:
-        if course_id == 'Сбросить курс':
+        if course_id == 0:
             await state.update_data(course_id=None)
             await cb.message.answer("Курс сброшен", reply_markup=return_to_the_menu())
         else:
@@ -90,6 +90,7 @@ async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSM
         if course_id:
             async with AsyncSessionLocal() as session:
                 assignments = await find_assignments_by_course_id(course_id, session)
+                print(assignments)
             await cb.message.edit_text("Выберите задание или сбростье его:", reply_markup=choose_assignment(assignments, 0))
         else:
             await cb.message.edit_text("Чтобы выбрать активное задание, нужно выбрать активный курс.", reply_markup=have_to_choose_course())
@@ -105,7 +106,7 @@ async def process_set_teacher_active_assignment(cb: CallbackQuery, state: FSMCon
     data = cb.data.split(":")
     assignment_id = int(data[1])
     try:
-        if assignment_id == 'Сбросить задание':
+        if assignment_id == 0:
             await state.update_data(assignment_id=None)
             await cb.message.answer("Задание сброшено", reply_markup=return_to_the_menu())
         else:

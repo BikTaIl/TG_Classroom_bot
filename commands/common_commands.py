@@ -8,6 +8,7 @@ from decimal import Decimal
 from models.db import User, GithubAccount, Notification, Course, Assignment, Assistant, Submission, Permission, \
     ErrorLog, AccessDenied
 
+
 async def create_user(telegram_id: int, telegram_username: str, session: AsyncSession) -> None:
     """"Создать профиль юзера при старте"""
     async with session.begin():
@@ -31,6 +32,24 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
         else:
             raise ValueError("Пользователь уже существует.")
 
+
+async def create_permission_student(telegram_id: int, session: AsyncSession) -> None:
+    async with session.begin():
+        result_perm = await session.execute(
+            select(Permission).where(Permission.telegram_id == telegram_id,
+                                     Permission.permitted_role == 'student')
+        )
+        permission = result_perm.scalar_one_or_none()
+        if permission is None:
+            permission = Permission(
+                telegram_id=telegram_id,
+                permitted_role='student'
+            )
+            session.add(permission)
+        else:
+            raise ValueError("Разрешение уже выдано")
+
+
 async def set_active_role(telegram_id: int, role: str, session: AsyncSession) -> None:
     """Установить активную роль пользователя: 'student', 'teacher', 'assistant', 'admin'. С проверкой на доступность роли"""
     async with session.begin():
@@ -48,7 +67,6 @@ async def set_active_role(telegram_id: int, role: str, session: AsyncSession) ->
         if not permission:
             raise AccessDenied("У вас нет доступа к этой роли.")
         user.active_role = role
-
 
 
 async def toggle_global_notifications(telegram_id: int, session: AsyncSession) -> None:
@@ -75,6 +93,7 @@ async def change_git_account(telegram_id: int, github_login: str, session: Async
     if not git:
         raise ValueError(f"Аккаунта {github_login} не существует или у вас нет к нему доступа.")
     user.active_github_username = github_login
+
 
 async def enter_name(telegram_id: int, full_name: str, session: AsyncSession) -> None:
     """Добавить в бд полное имя пользователся"""

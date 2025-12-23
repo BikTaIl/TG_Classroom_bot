@@ -507,6 +507,8 @@ async def add_course_assistant(
         session: AsyncSession = None
 ) -> None:
     """Добавить ассистента по username. Только для учителя"""
+    if assistant_telegram_username[0] == '@':
+        assistant_telegram_username = assistant_telegram_username[1:]
     await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
     assistant = await _get_user_by_username(assistant_telegram_username, session)
     if not assistant:
@@ -544,6 +546,17 @@ async def add_course_assistant(
         telegram_id=assistant.telegram_id,
         course_id=course_id
     )
+    permission_find_query = await session.execute(select(Permission).where(
+        Permission.telegram_id == assistant.telegram_id,
+        Permission.permitted_role == 'assistant'
+    ))
+    permission_find = permission_find_query.scalar_one_or_none()
+    if permission_find is None:
+        permission = Permission(
+            telegram_id=new_assistant.telegram_id,
+
+        )
+        session.add(permission)
     session.add(new_assistant)
     await session.commit()
 
@@ -555,7 +568,8 @@ async def remove_course_assistant(
         session: AsyncSession = None
 ) -> None:
     """Удалить ассистента. Только для учителя"""
-
+    if assistant_telegram_username[0] == '@':
+        assistant_telegram_username = assistant_telegram_username[1:]
     await _check_permission(teacher_telegram_id, ['teacher', 'admin'], course_id, session)
     assistant = await _get_user_by_username(assistant_telegram_username, session)
     if not assistant:
