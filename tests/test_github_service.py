@@ -1,5 +1,6 @@
 import pytest
 import pytest_asyncio
+import os
 from unittest.mock import patch, AsyncMock, MagicMock
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -12,7 +13,7 @@ from infra.git.github_service import (
     complete_github_link,
 )
 
-DATABASE_URL = "postgresql+asyncpg://molonovboris@localhost:5432/testdb"
+DATABASE_URL = os.getenv("TEST_DATABASE")
 
 
 @pytest_asyncio.fixture(scope="function")

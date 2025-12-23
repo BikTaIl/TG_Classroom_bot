@@ -701,3 +701,15 @@ async def find_assignments_by_course_id(
         select(Assignment.github_assignment_id, Assignment.title).where(Assignment.classroom_id == course_id))
     return [tuple(row) for row in assignments_query.all()]
 
+
+async def select_manual_check_assignment(
+        assignment_id: int,
+        session: AsyncSession
+) -> None:
+    if assignment_id is None:
+        raise ValueError("Задание не выбрано")
+    assignment = await session.get(Assignment, assignment_id)
+    if assignment is None:
+        raise ValueError("Выбранное задание отсутствует")
+    assignment.grading_mode = 'manual'
+    await session.commit()
