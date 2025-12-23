@@ -368,7 +368,11 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
     if course_id:
         await state.set_state(AddAnnouncement.waiting_text)
         await cb.message.edit_text(
+<<<<<<< HEAD
             "Введите текст сообщения, которое хотите отправить:"
+=======
+            "Введите текст сообщения"
+>>>>>>> a354e6ce320e3fe836483acf3f1d77792073cd44
         )
     else:
         await cb.message.edit_text("Для добавления объявления на курсе выберите активный курс", reply_markup=have_to_choose_course())
@@ -376,7 +380,7 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
 
 @teacher_router.message(AddAnnouncement.waiting_text)
 async def process_create_course_announcement_teacher_second(message: Message, state: FSMContext):
-    """Ввод имени для функции create_course_announcement_teacher"""
+    """Ввод сообщения для функции create_course_announcement_teacher"""
     text = message.text
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
