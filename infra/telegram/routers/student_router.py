@@ -5,6 +5,7 @@ from aiogram import Router, F
 from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.student_keyboards import *
+from models.db import AccessDenied
 from .states import *
 from commands.student_commands import *
 from commands.teacher_and_assistant_commands import find_assignments_by_course_id
@@ -15,7 +16,7 @@ student_router = Router()
 async def admin_panel(cb: CallbackQuery):
     """Функция отображения панели студента.
        Отображается только по кнопке, через команду зайти нельзя."""
-    await cb.message.answer("Панель студента:", reply_markup=get_student_menu())
+    await cb.message.edit_text("Панель студента:", reply_markup=get_student_menu())
     await cb.answer()
 
 @student_router.callback_query(F.data == "choose_student_active_course")
