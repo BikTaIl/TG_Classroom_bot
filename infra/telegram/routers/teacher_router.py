@@ -90,6 +90,7 @@ async def process_choose_teacher_active_assignment(cb: CallbackQuery, state: FSM
         if course_id:
             async with AsyncSessionLocal() as session:
                 assignments = await find_assignments_by_course_id(course_id, session)
+                print(assignments)
             await cb.message.edit_text("Выберите задание или сбростье его:", reply_markup=choose_assignment(assignments, 0))
         else:
             await cb.message.edit_text("Чтобы выбрать активное задание, нужно выбрать активный курс.", reply_markup=have_to_choose_course())
@@ -368,11 +369,7 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
     if course_id:
         await state.set_state(AddAnnouncement.waiting_text)
         await cb.message.edit_text(
-<<<<<<< HEAD
-            "Введите текст сообщения, которое хотите отправить:"
-=======
-            "Введите текст сообщения"
->>>>>>> a354e6ce320e3fe836483acf3f1d77792073cd44
+            "Введите ник ассистента в виде @username или username:"
         )
     else:
         await cb.message.edit_text("Для добавления объявления на курсе выберите активный курс", reply_markup=have_to_choose_course())
@@ -380,7 +377,7 @@ async def process_create_course_announcement_teacher_first(cb: CallbackQuery, st
 
 @teacher_router.message(AddAnnouncement.waiting_text)
 async def process_create_course_announcement_teacher_second(message: Message, state: FSMContext):
-    """Ввод сообщения для функции create_course_announcement_teacher"""
+    """Ввод имени для функции create_course_announcement_teacher"""
     text = message.text
     all_data = await state.get_data()
     course_id = all_data.get("course_id")
