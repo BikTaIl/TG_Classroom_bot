@@ -1,6 +1,8 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
+
+from commands.sync import sync_function
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.teacher_keyboards import *
 from .states import *
