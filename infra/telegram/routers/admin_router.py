@@ -1,3 +1,5 @@
+from pyexpat.errors import messages
+
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram import Router, F
@@ -5,6 +7,7 @@ from aiogram import Router, F
 from adapters.table_to_text import table_to_text
 from infra.db import AsyncSessionLocal
 from infra.telegram.keyboards.admin_keyboards import *
+from models.db import AccessDenied
 from .states import *
 from commands.admin_commands import *
 from commands.teacher_and_assistant_commands import _get_user_by_username
@@ -191,3 +194,25 @@ async def process_get_last_failed_github_call_info(cb: CallbackQuery, state: FSM
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     finally:
         await cb.answer()
+
+@admin_router.callback_query(F.data == "delete_organization")
+async def process_delete_organization_first(cb: CallbackQuery, state: FSMContext):
+    await state.set_state(DeleteOrganisation.waiting_name)
+    await cb.message.edit_text(
+        "Введите название организации, которую хотите удалить:"
+    )
+    await cb.answer()
+
+@admin_router.message(DeleteOrganisation.waiting_name)
+async def process_delete_organization_first(message: Message, state: FSMContext):
+    name = message.text
+    try:
+        async with AsyncSessionLocal() as session:
+            await delete_organization(message.from_user.id, name, session)
+        await message.answer("Организация успешно удалена", reply_markup=return_to_the_menu())
+    except AccessDenied as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    except ValueError as err:
+        await message.answer(str(err), reply_markup=return_to_the_menu())
+    finally:
+        await state.clear()
