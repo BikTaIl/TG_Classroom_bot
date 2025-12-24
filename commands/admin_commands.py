@@ -207,3 +207,6 @@ async def add_organisation(admin_telegram_id: int, teacher_telegram_id: int, nam
     )
     session.add(new_organization)
     await session.commit()
+
+async def delete_organization(admin_telegram_id: int, name: str, session: AsyncSession = None) -> None:
+    pass

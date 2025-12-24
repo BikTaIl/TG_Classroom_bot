@@ -65,5 +65,8 @@ class EnterName(StatesGroup):
 class AddOrganisation(StatesGroup):
     waiting_name = State()
 
+class DeleteOrganisation(StatesGroup):
+    waiting_name = State()
+
 class AddAnnouncement(StatesGroup):
     waiting_text = State()
