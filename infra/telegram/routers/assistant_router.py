@@ -9,10 +9,10 @@ from adapters.table_to_text import table_to_text
 assistant_router = Router()
 
 @assistant_router.callback_query(F.data == "start_assistant")
-async def admin_panel(cb: CallbackQuery):
+async def assistant_panel(cb: CallbackQuery):
     """Функция отображения панели ассистента.
        Отображается только по кнопке, через команду зайти нельзя."""
-    await cb.message.answer("Панель ассистента:", reply_markup=get_assistant_menu())
+    await cb.message.edit_text("Панель ассистента:", reply_markup=get_assistant_menu())
     await cb.answer()
 
 @assistant_router.callback_query(F.data == "get_summary_assistant")
@@ -40,10 +40,10 @@ async def process_set_assistant_active_course(cb: CallbackQuery, state: FSMConte
     try:
         if course_id == 0:
             await state.update_data(course_id=None)
-            await cb.message.answer("Курс сброшен", reply_markup=return_to_the_menu())
+            await cb.message.edit_text("Курс сброшен", reply_markup=return_to_the_menu())
         else:
             await state.update_data(course_id=course_id)
-            await cb.message.answer("Курс установлен", reply_markup=return_to_the_menu())
+            await cb.message.edit_text("Курс установлен", reply_markup=return_to_the_menu())
     except AccessDenied as err:
         await cb.message.edit_text(str(err), reply_markup=return_to_the_menu())
     except ValueError as err:

@@ -18,7 +18,7 @@ admin_router = Router()
 async def admin_panel(cb: CallbackQuery):
     """Функция отображения панели администратора
        Отображается только по кнопке, через команду зайти нельзя."""
-    await cb.message.answer("Панель администратора:", reply_markup=get_admin_menu())
+    await cb.message.edit_text("Панель администратора:", reply_markup=get_admin_menu())
     await cb.answer()
 
 @admin_router.callback_query(F.data == "grant_teacher_role")
