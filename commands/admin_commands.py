@@ -195,7 +195,7 @@ async def get_last_failed_github_call_info(
 
 
 async def add_organisation(admin_telegram_id: int, teacher_telegram_id: int, name: str,
-                           session: AsyncSession = None) -> None:
+                           session: AsyncSession) -> None:
     await _check_permission(admin_telegram_id, ['admin'], 0, session)
     query = await session.execute(select(GitOrganization).where(GitOrganization.organization_name == name))
     existing = query.scalar_one_or_none()

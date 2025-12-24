@@ -8,6 +8,8 @@ from models.db import User, GithubAccount, Course, Assignment, Assistant, Submis
 
 async def _get_user_by_username(username: str, session: AsyncSession) -> Optional[User]:
     """Найти пользователя по username"""
+    if username[0] == '@':
+        username = username[1:]
     stmt = select(User).where(User.telegram_username == username)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
