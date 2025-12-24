@@ -5,7 +5,7 @@ from unittest.mock import patch
 from datetime import datetime, timedelta, date
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from models.db import (
     Base,
     User,
