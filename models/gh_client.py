@@ -1,9 +1,8 @@
 import os
 import httpx
-from typing import Any, Dict, List, Optional
+from typing import Optional
 from dotenv import load_dotenv
 import asyncio
-import json
 
 load_dotenv()
 
