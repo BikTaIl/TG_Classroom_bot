@@ -34,9 +34,9 @@ async def process_grant_teacher_role_first(cb: CallbackQuery, state: FSMContext)
 async def process_grant_teacher_role_second(message: Message, state: FSMContext):
     organisation_name = message.text
     all_data = await state.get_data()
-    all_data.update(organisation_name=organisation_name)
-    await state.clear()
+    await state.set_state()
     await state.set_state(AddTeacher.waiting_username)
+    all_data.update(organisation_name=organisation_name)
     await message.answer(
         "Пришли tg username учителя в формате @username (или просто username)."
     )
