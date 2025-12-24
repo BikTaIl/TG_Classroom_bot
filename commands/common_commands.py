@@ -11,7 +11,8 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
             select(User).where(User.telegram_id == telegram_id)
         )
         user = result.scalar_one_or_none()
-
+        if user is not None and user.telegram_username != telegram_username:
+            user.telegram_username = telegram_username
         if user is None:
             user = User(
                 telegram_id=telegram_id,
