@@ -310,7 +310,7 @@ async def process_add_course_assistant_teacher_first(cb: CallbackQuery, state: F
         )
     else:
         await cb.message.edit_text("Для добавления ассистента выберите активный курс", reply_markup=have_to_choose_course())
-        await cb.answer()
+    await cb.answer()
 
 @teacher_router.message(AddAssistant.waiting_username)
 async def process_add_course_assistant_teacher_second(message: Message, state: FSMContext):

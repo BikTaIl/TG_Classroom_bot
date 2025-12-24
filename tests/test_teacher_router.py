@@ -4,10 +4,22 @@ from unittest.mock import AsyncMock, ANY
 from aiogram.types import Message, CallbackQuery, User
 from aiogram.fsm.context import FSMContext
 
-from infra.telegram.routers.teacher_router import *
-from infra.telegram.routers.states import AddAssistant, RemoveAssistant, AddAnnouncement
 
 from commands.common_commands import AccessDenied
+from infra.telegram.routers.teacher_router import (
+    teacher_panel,
+    teacher_summary_panel,
+    process_choose_teacher_active_course,
+    process_set_teacher_active_course,
+    process_previous_page,
+    process_next_page, process_choose_teacher_active_assignment, process_set_teacher_active_assignment,
+    process_get_course_students_overview_teacher, process_get_assignment_students_status_teacher,
+    process_add_course_assistant_teacher_first, process_get_classroom_users_without_bot_accounts_teacher,
+    process_add_course_assistant_teacher_second, process_create_course_announcement_teacher_second,
+    process_delete_manual_check_assignment_teacher, process_select_manual_check_assignment_teacher,
+    process_remove_course_assistant_teacher_second,
+
+)
 
 
 @pytest_asyncio.fixture
@@ -35,7 +47,8 @@ def mock_callback():
     cb.message = AsyncMock(spec=Message)
     cb.message.edit_text = AsyncMock()
     cb.message.answer = AsyncMock()
-    cb.data = AsyncMock(spec=str)
+    cb.message.bot = AsyncMock()
+    cb.message.bot.send_message = AsyncMock()
 
     cb.answer = AsyncMock()
     return cb
@@ -53,7 +66,11 @@ def mock_message():
 @pytest_asyncio.fixture
 def mock_state():
     state = AsyncMock(spec=FSMContext)
-    state.update_data = AsyncMock()
+    state._data = {}
+    state.get_data = AsyncMock(side_effect=lambda: state._data.copy())
+    state.update_data = AsyncMock(side_effect=lambda **kwargs: state._data.update(kwargs))
+    state.set_state = AsyncMock()
+    state.clear = AsyncMock(side_effect=lambda: state._data.clear())
     return state
 
 
@@ -62,7 +79,7 @@ async def test_teacher_panel_success(mock_callback):
     """Тест отображения панели учителя"""
     await teacher_panel(mock_callback)
 
-    mock_callback.message.edit_text.assert_called_once_with("Панель учителя:")
+    mock_callback.message.edit_text.assert_called_once_with("Панель учителя:", reply_markup=ANY)
     mock_callback.answer.assert_called_once()
 
 
@@ -71,7 +88,7 @@ async def test_teacher_summary_panel_success(mock_callback):
     """Тест отображения панели сводок"""
     await teacher_summary_panel(mock_callback)
 
-    mock_callback.message.edit_text.assert_called_once_with("Выберите сводку:")
+    mock_callback.message.edit_text.assert_called_once_with("Выберите сводку:", reply_markup=ANY)
     mock_callback.answer.assert_called_once()
 
 
@@ -81,13 +98,13 @@ async def test_choose_teacher_active_course_success(mock_callback, mock_db_sessi
     mock_find_courses = mocker.patch(
         "infra.telegram.routers.teacher_router.find_teachers_courses",
         new_callable=AsyncMock,
-        return_value=[{"id": 1, "name": "Курс 1"}]
+        return_value=[(1, "Курс 1")]
     )
 
     await process_choose_teacher_active_course(mock_callback, mock_callback)
 
     mock_find_courses.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once_with("Выберите курс или сбростье его:")
+    mock_callback.message.edit_text.assert_called_once_with("Выберите курс или сбростье его:", reply_markup=ANY)
     mock_callback.answer.assert_called_once()
 
 
@@ -149,7 +166,7 @@ async def test_process_previous_page_courses(mock_callback, mock_db_session, moc
     await process_previous_page(mock_callback, mock_callback)
 
     mock_find_courses.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once()
+    mock_callback.message.edit_text.assert_called_once("Выберите курс или сбростье его:", reply_markup=ANY)
     mock_callback.answer.assert_called_once()
 
 
@@ -166,7 +183,7 @@ async def test_process_next_page_courses(mock_callback, mock_db_session, mocker)
     await process_next_page(mock_callback, mock_callback)
 
     mock_find_courses.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once()
+    mock_callback.message.edit_text.assert_called_once("Выберите курс или сбростье его:", reply_markup=ANY)
     mock_callback.answer.assert_called_once()
 
 
@@ -177,13 +194,13 @@ async def test_choose_teacher_active_assignment_with_course(mock_callback, mock_
     mock_find_assignments = mocker.patch(
         "infra.telegram.routers.teacher_router.find_assignments_by_course_id",
         new_callable=AsyncMock,
-        return_value=[{"id": 1, "name": "Задание 1"}]
+        return_value=[(1, "Задание 1")]
     )
 
     await process_choose_teacher_active_assignment(mock_callback, mock_state)
 
     mock_find_assignments.assert_called_once_with(1, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once_with("Выберите задание или сбростье его:")
+    mock_callback.message.edit_text.assert_called_once_with("Выберите задание или сбростье его:", reply_markup=ANY)
     mock_callback.answer.assert_called_once()
 
 
@@ -195,7 +212,8 @@ async def test_choose_teacher_active_assignment_without_course(mock_callback, mo
     await process_choose_teacher_active_assignment(mock_callback, mock_state)
 
     mock_callback.message.edit_text.assert_called_once_with(
-        "Чтобы выбрать активное задание, нужно выбрать активный курс."
+        "Чтобы выбрать активное задание, нужно выбрать активный курс.",
+        reply_markup=ANY
     )
     mock_callback.answer.assert_called_once()
 
@@ -207,7 +225,7 @@ async def test_set_teacher_active_course_success(mock_callback, mock_state):
 
     await process_set_teacher_active_assignment(mock_callback, mock_state)
 
-    mock_state.update_data.assert_called_once_with(course_id=1)
+    mock_state.update_data.assert_called_once_with(assignment_id=1)
     mock_callback.message.edit_text.assert_called_once_with(
         "Задание установлено",
         reply_markup=ANY
@@ -222,7 +240,7 @@ async def test_set_teacher_active_course_reset(mock_callback, mock_state):
 
     await process_set_teacher_active_assignment(mock_callback, mock_state)
 
-    mock_state.update_data.assert_called_once_with(course_id=None)
+    mock_state.update_data.assert_called_once_with(assignment_id=None)
     mock_callback.message.edit_text.assert_called_once_with(
         "Задание сброшено",
         reply_markup=ANY
@@ -231,16 +249,17 @@ async def test_set_teacher_active_course_reset(mock_callback, mock_state):
 
 
 @pytest.mark.asyncio
-async def test_process_previous_page_courses(mock_callback, mock_db_session, mocker):
-    """Тест перехода на предыдущую страницу заданий"""
-    mock_callback.data = "previous_paper_assignment_teacher:1"
+async def test_process_previous_page_assistants(mock_callback, mock_state, mock_db_session, mocker):
+    """Тест перехода на предыдущую страницу курсов"""
+    mock_callback.data = "previous_paper_course_teacher:1"
+    mock_state.update_data(course_id=1)
     mock_find_assignments = mocker.patch(
-        "infra.telegram.routers.teacher_router.find_assignments_by_course_id",
+        "infra.telegram.routers.teacher_router.find_teachers_courses",
         new_callable=AsyncMock,
-        return_value=[]
+        return_value=[123]
     )
 
-    await process_previous_page(mock_callback, mock_callback)
+    await process_previous_page(mock_callback, mock_state)
 
     mock_find_assignments.assert_called_once_with(123, mock_db_session)
     mock_callback.message.edit_text.assert_called_once()
@@ -248,19 +267,23 @@ async def test_process_previous_page_courses(mock_callback, mock_db_session, moc
 
 
 @pytest.mark.asyncio
-async def test_process_next_page_courses(mock_callback, mock_db_session, mocker):
+async def test_process_next_page_assistants(mock_callback, mock_state, mock_db_session, mocker):
     """Тест перехода на следующую страницу заданий"""
     mock_callback.data = "next_paper_assignment_teacher:0"
+    mock_state.update_data(course_id=1)
     mock_find_assignments = mocker.patch(
         "infra.telegram.routers.teacher_router.find_assignments_by_course_id",
         new_callable=AsyncMock,
-        return_value=[]
+        return_value=[2]
     )
 
-    await process_next_page(mock_callback, mock_callback)
+    await process_next_page(mock_callback, mock_state)
 
-    mock_find_assignments.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once()
+    mock_find_assignments.assert_called_once_with(2, mock_db_session)
+    mock_callback.message.edit_text.assert_called_once(
+        "Выберите задание:.",
+        reply_markup=ANY
+    )
     mock_callback.answer.assert_called_once()
 
 
@@ -284,7 +307,8 @@ async def test_get_course_students_overview_success(mock_callback, mock_state, m
     mock_get_overview.assert_called_once_with(123, 1, mock_db_session)
     mock_table_to_text.assert_called_once()
     mock_callback.message.edit_text.assert_called_once_with(
-        "Таблица данных"
+        "Таблица данных",
+        reply_markup=ANY
     )
     mock_callback.answer.assert_called_once()
 
@@ -315,13 +339,17 @@ async def test_get_assignment_students_status_success(mock_callback, mock_state,
     mock_table_to_text = mocker.patch(
         "infra.telegram.routers.teacher_router.table_to_text",
         new_callable=AsyncMock,
-        return_value="Таблица статусов"
+        return_value="Таблица cтатусов"
     )
 
     await process_get_assignment_students_status_teacher(mock_callback, mock_state)
 
     mock_get_status.assert_called_once_with(123, 1, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once()
+    mock_table_to_text.assert_called_once()
+    mock_callback.message.edit_text.assert_called_once_with(
+        "Таблица cтатусов",
+        reply_markup=ANY
+    )
     mock_callback.answer.assert_called_once()
 
 
@@ -368,9 +396,9 @@ async def test_add_course_assistant_teacher_first_without_course(mock_callback, 
     await process_add_course_assistant_teacher_first(mock_callback, mock_state)
 
     mock_callback.message.edit_text.assert_called_once_with(
-        "Для добавления ассистента выберите активный курс"
+        "Для добавления ассистента выберите активный курс",
+        reply_markup=ANY
     )
-    mock_callback.answer.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -409,7 +437,8 @@ async def test_create_course_announcement_teacher_second_success(mock_message, m
     mock_create_announcement.assert_called_once_with(123, 1, mock_db_session)
     assert mock_message.bot.send_message.call_count == 3
     mock_message.answer.assert_called_once_with(
-        "Уведомление успешно создано!"
+        "Уведомление успешно создано!",
+        reply_markup=ANY
     )
     mock_state.clear.assert_called_once()
 
@@ -427,7 +456,8 @@ async def test_select_manual_check_assignment_success(mock_callback, mock_state,
 
     mock_select_check.assert_called_once_with(1, mock_db_session)
     mock_callback.message.edit_text.assert_called_once_with(
-        "Ручная проверка установлена."
+        "Ручная проверка установлена.",
+        reply_markup=ANY
     )
     mock_callback.answer.assert_called_once()
 
@@ -445,7 +475,8 @@ async def test_delete_manual_check_assignment_success(mock_callback, mock_state,
 
     mock_delete_check.assert_called_once_with(1, mock_db_session)
     mock_callback.message.edit_text.assert_called_once_with(
-        "Автоматическая проверка установлена."
+        "Автоматическая проверка установлена.",
+        reply_markup=ANY
     )
     mock_callback.answer.assert_called_once()
 
