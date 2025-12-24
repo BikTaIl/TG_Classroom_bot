@@ -1,6 +1,6 @@
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-
+import os
 from models.db import User, GithubAccount, Permission, AccessDenied
 
 
@@ -23,6 +23,12 @@ async def create_user(telegram_id: int, telegram_username: str, session: AsyncSe
                 banned=False,
                 notifications_enabled=True,
             )
+            if telegram_id == int(os.getenv('ADMIN_TG_ID')):
+                permission_admin = Permission(
+                    telegram_id=telegram_id,
+                    permitted_role='admin'
+                )
+                session.add(permission_admin)
             session.add(user)
         else:
             raise ValueError("Пользователь уже существует.")

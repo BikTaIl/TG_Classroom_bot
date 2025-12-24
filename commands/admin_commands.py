@@ -207,3 +207,15 @@ async def add_organisation(admin_telegram_id: int, teacher_telegram_id: int, nam
     )
     session.add(new_organization)
     await session.commit()
+
+
+async def delete_organization(
+        admin_telegram_id: int,
+        name: str,
+        session: AsyncSession) -> None:
+    await _check_permission(admin_telegram_id, ['admin'], 0, session)
+    query = await session.get(GitOrganization, name)
+    if not query:
+        raise ValueError("Такой организации нет")
+    await session.delete(query)
+    await session.commit()
