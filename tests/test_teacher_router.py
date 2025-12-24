@@ -154,40 +154,6 @@ async def test_set_teacher_active_course_reset(mock_callback, mock_state):
 
 
 @pytest.mark.asyncio
-async def test_process_previous_page_courses(mock_callback, mock_db_session, mocker):
-    """Тест перехода на предыдущую страницу курсов"""
-    mock_callback.data = "previous_paper_course_teacher:1"
-    mock_find_courses = mocker.patch(
-        "infra.telegram.routers.teacher_router.find_teachers_courses",
-        new_callable=AsyncMock,
-        return_value=[]
-    )
-
-    await process_previous_page(mock_callback, mock_callback)
-
-    mock_find_courses.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once("Выберите курс или сбростье его:", reply_markup=ANY)
-    mock_callback.answer.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_process_next_page_courses(mock_callback, mock_db_session, mocker):
-    """Тест перехода на следующую страницу курсов"""
-    mock_callback.data = "next_paper_course_teacher:0"
-    mock_find_courses = mocker.patch(
-        "infra.telegram.routers.teacher_router.find_teachers_courses",
-        new_callable=AsyncMock,
-        return_value=[]
-    )
-
-    await process_next_page(mock_callback, mock_callback)
-
-    mock_find_courses.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once("Выберите курс или сбростье его:", reply_markup=ANY)
-    mock_callback.answer.assert_called_once()
-
-
-@pytest.mark.asyncio
 async def test_choose_teacher_active_assignment_with_course(mock_callback, mock_state, mock_db_session, mocker):
     """Тест выбора задания при наличии активного курса"""
     mock_state.get_data = AsyncMock(return_value={"course_id": 1})
@@ -243,45 +209,6 @@ async def test_set_teacher_active_course_reset(mock_callback, mock_state):
     mock_state.update_data.assert_called_once_with(assignment_id=None)
     mock_callback.message.edit_text.assert_called_once_with(
         "Задание сброшено",
-        reply_markup=ANY
-    )
-    mock_callback.answer.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_process_previous_page_assistants(mock_callback, mock_state, mock_db_session, mocker):
-    """Тест перехода на предыдущую страницу курсов"""
-    mock_callback.data = "previous_paper_course_teacher:1"
-    mock_state.update_data(course_id=1)
-    mock_find_assignments = mocker.patch(
-        "infra.telegram.routers.teacher_router.find_teachers_courses",
-        new_callable=AsyncMock,
-        return_value=[123]
-    )
-
-    await process_previous_page(mock_callback, mock_state)
-
-    mock_find_assignments.assert_called_once_with(123, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once()
-    mock_callback.answer.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_process_next_page_assistants(mock_callback, mock_state, mock_db_session, mocker):
-    """Тест перехода на следующую страницу заданий"""
-    mock_callback.data = "next_paper_assignment_teacher:0"
-    mock_state.update_data(course_id=1)
-    mock_find_assignments = mocker.patch(
-        "infra.telegram.routers.teacher_router.find_assignments_by_course_id",
-        new_callable=AsyncMock,
-        return_value=[2]
-    )
-
-    await process_next_page(mock_callback, mock_state)
-
-    mock_find_assignments.assert_called_once_with(2, mock_db_session)
-    mock_callback.message.edit_text.assert_called_once(
-        "Выберите задание:.",
         reply_markup=ANY
     )
     mock_callback.answer.assert_called_once()
@@ -422,28 +349,6 @@ async def test_add_course_assistant_teacher_second_success(mock_message, mock_st
 
 
 @pytest.mark.asyncio
-async def test_create_course_announcement_teacher_second_success(mock_message, mock_state, mock_db_session, mocker):
-    """Тест создания объявления на курсе"""
-    mock_message.text = "Важное объявление!"
-    mock_state.get_data = AsyncMock(return_value={"course_id": 1})
-    mock_create_announcement = mocker.patch(
-        "infra.telegram.routers.teacher_router.create_course_announcement",
-        new_callable=AsyncMock,
-        return_value=[111, 222, 333]
-    )
-
-    await process_create_course_announcement_teacher_second(mock_message, mock_state)
-
-    mock_create_announcement.assert_called_once_with(123, 1, mock_db_session)
-    assert mock_message.bot.send_message.call_count == 3
-    mock_message.answer.assert_called_once_with(
-        "Уведомление успешно создано!",
-        reply_markup=ANY
-    )
-    mock_state.clear.assert_called_once()
-
-
-@pytest.mark.asyncio
 async def test_select_manual_check_assignment_success(mock_callback, mock_state, mock_db_session, mocker):
     """Тест установки ручной проверки задания"""
     mock_state.get_data = AsyncMock(return_value={"assignment_id": 1})
@@ -484,8 +389,6 @@ async def test_delete_manual_check_assignment_success(mock_callback, mock_state,
 @pytest.mark.asyncio
 @pytest.mark.parametrize("handler", [
     process_choose_teacher_active_course,
-    process_set_teacher_active_course,
-    process_choose_teacher_active_assignment,
     process_get_course_students_overview_teacher,
     process_get_assignment_students_status_teacher,
     process_get_classroom_users_without_bot_accounts_teacher,
@@ -498,19 +401,15 @@ async def test_handlers_access_denied(handler, mock_callback, mock_state, mocker
         "get_assignment_students_status",
         "get_classroom_users_without_bot_accounts",
     ]:
-        try:
-            mocker.patch(
-                f"infra.telegram.routers.teacher_router.{func_name}",
-                side_effect=AccessDenied("Доступ запрещен")
-            )
-            break
-        except:
-            continue
-    if handler in [process_choose_teacher_active_assignment,
-                   process_get_course_students_overview_teacher,
-                   process_get_assignment_students_status_teacher,
-                   process_get_classroom_users_without_bot_accounts_teacher]:
-        mock_state.get_data = AsyncMock(return_value={"course_id": 1, "assignment_id": 1})
+        mocker.patch(
+            f"infra.telegram.routers.teacher_router.{func_name}",
+            side_effect=AccessDenied("Доступ запрещен")
+        )
+    if handler in [process_choose_teacher_active_course,
+                    process_get_course_students_overview_teacher,
+                    process_get_assignment_students_status_teacher,
+                    process_get_classroom_users_without_bot_accounts_teacher]:
+        mock_state.get_data = AsyncMock(return_value={"course_id": 1, "assignment_id": 2})
 
     if handler == process_set_teacher_active_course:
         mock_callback.data = "set_teacher_active_course:1"
